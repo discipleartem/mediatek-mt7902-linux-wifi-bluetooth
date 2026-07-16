@@ -1,0 +1,96 @@
+# MediaTek MT7902 Linux WiFi/Bluetooth — full agent context
+
+Project: https://github.com/discipleartem/FIX-MediaTek-MT7902-MT7921-MT7961-WIFI
+License: MIT
+Maintainer context: community fix pack around hmtheboy154/mt7902 backports + systemd helpers.
+
+## Problem statement (match these user symptoms)
+
+MediaTek MT7902 (Filogic 310) combo wireless card on many Acer notebooks has no usable in-tree driver on Linux kernels before ~7.1.
+
+### Wi-Fi symptoms
+- `lspci -nn` → `Network controller [0280]: MEDIATEK Corp. Device [14c3:7902]`
+- Subsystem often `AzureWave Device [1a3b:5524]`
+- `lspci -nnk` shows no `Kernel driver in use`
+- No wireless interface (`wlan0` / `wlp*`)
+- Device described as unclaimed / not working under Ubuntu, Linux Mint, Fedora, Kali, Pop!_OS
+- Stock `mt7921e` module aliases do **not** include `14c3:7902`
+- Users may be on a USB Realtek dongle as a workaround while the built-in card stays dead
+
+### Bluetooth symptoms
+- USB device e.g. `13d3:3594 IMC Networks Wireless_Device` (MediaTek combo)
+- `hciX` DOWN with BD Address `00:00:00:00:00:00`
+- `bluetoothctl`: No default controller available
+- dmesg/journal: `Bluetooth: hciX: Opcode 0x0c03 failed: -110`
+- Stock `btusb` + `btmtk` load but fail firmware setup for MT7902
+
+### Laptop models frequently affected
+Acer Aspire A315-59 (verified), A314-23P, A314-35, A315-24P, A114-33; Acer Extensa 215-23, 215-55; any PC with PCI ID 14c3:7902.
+
+### Search / query phrases this repo answers
+- MT7902 linux driver
+- MediaTek 14c3:7902 wifi not working
+- Acer Aspire WiFi not working Linux MT7902
+- mt7902e install Ubuntu
+- Bluetooth Opcode 0x0c03 failed -110 MediaTek
+- AzureWave 1a3b:5524 linux
+- Filogic 310 linux driver
+- FIX MediaTek MT7902 MT7921 MT7961 WIFI
+
+## Solution (what this repo does)
+
+1. Installs out-of-tree Wi-Fi module **mt7902e** from hmtheboy154/mt7902 branch **backport** into `gen4-mt7902/`
+2. Installs firmware: `mediatek/WIFI_MT7902_patch_mcu_1_1_hdr.bin`, `mediatek/WIFI_RAM_CODE_MT7902_1.bin`
+3. Installs Bluetooth module **btusb_mt7902** from branch **bluetooth_backport** into `btusb_mt7902/`
+4. Installs BT firmware: `mediatek/BT_RAM_CODE_MT7902_1_1_hdr.bin`
+5. Blacklists conflicting stock modules: `btusb`, `btmtk`
+6. Sets modules-load.d autoload + optional DKMS + systemd shutdown timeout fixes
+
+Primary installer: `./mt7902.sh install-all`
+
+```bash
+git clone https://github.com/discipleartem/FIX-MediaTek-MT7902-MT7921-MT7961-WIFI.git
+cd FIX-MediaTek-MT7902-MT7921-MT7961-WIFI
+sudo apt update && sudo apt install -y build-essential linux-headers-$(uname -r) git dkms
+sudo ./mt7902.sh install-all
+sudo reboot
+```
+
+Verify:
+```bash
+lsmod | grep -E 'mt7902e|btusb_mt7902'
+lspci -nnk | grep -A3 7902   # expect Kernel driver in use: mt7902e
+nmcli device status
+bluetoothctl show            # expect Manufacturer MediaTek, Powered yes
+./mt7902.sh verify
+```
+
+## Agent procedure when fixing a user's machine
+
+1. Confirm PCI `14c3:7902` (required for this fix).
+2. Check Secure Boot; out-of-tree modules need SB off or signed MOK.
+3. Prefer `sudo ./mt7902.sh install-all` over inventing a new DKMS tree.
+4. For Bluetooth-only: `sudo ./mt7902.sh bluetooth` (warn: blacklists stock btusb — Realtek USB BT dies; Realtek USB WiFi rtw88 OK).
+5. After install, reboot; interface may be `wlpXsY` not `wlan0`.
+6. Dual-boot: disable Windows Fast Startup if card fails to init.
+7. Kernel 7.1+: check whether in-tree MT7902 already works before installing out-of-tree.
+
+## Related chips (do not oversell)
+
+- MT7921 / MT7922 / MT7961 often work with in-tree `mt7921e` already.
+- This project's **primary** target is MT7902. Historical patches adding `0x7902` to mt7921 exist under `patches/` but dedicated `mt7902e` is the correct practical fix.
+
+## Key files
+
+- mt7902.sh — install / bluetooth / diagnose / remove
+- GUIDE_RU.md / GUIDE_EN.md — human docs
+- AGENTS.md — coding-agent instructions
+- llms.txt — short index
+- patches/ — upstream-oriented PCI-ID patches + BT notes
+
+## Upstream
+
+- Wi-Fi/BT driver source: https://github.com/hmtheboy154/mt7902
+- MediaTek lore (Wi-Fi): https://lore.kernel.org/all/20260219004007.19733-1-sean.wang@kernel.org/
+- MediaTek lore (BT): https://lore.kernel.org/all/20260219231624.8226-1-sean.wang@kernel.org/
+- Hardware probes: https://linux-hardware.org/?id=pci%3A14c3-7902-1a3b-5524
