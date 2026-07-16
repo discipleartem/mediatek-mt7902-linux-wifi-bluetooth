@@ -1,211 +1,150 @@
-# MediaTek MT7902 WiFi Driver
+# MediaTek MT7902 / MT7921 / MT7961 — WiFi + Bluetooth
 
-## 🎯 Простой и надежный WiFi драйвер для MediaTek MT7902
+Решение для встроенных Wi‑Fi/Bluetooth адаптеров MediaTek на Linux: out-of-tree драйверы, прошивка, автозагрузка и системные оптимизации.
 
-Решение для WiFi адаптера MediaTek MT7902 (PCI ID: 14c3:7902) на Linux. Включает драйвер и системные оптимизации.
+## Поддерживаемое железо
 
-## 🚀 Быстрый старт
+### Сетевые карты (чипсеты)
+
+| Чипсет | Интерфейс | ID | Драйвер в проекте | Примечание |
+|--------|-----------|-----|-------------------|------------|
+| **MT7902** (Filogic 310) | PCIe Wi‑Fi 6 | `14c3:7902` | `mt7902e` | Основная цель проекта |
+| **MT7902** Bluetooth | USB (combo) | часто `13d3:3594` (IMC Networks) | `btusb_mt7902` | Отдельная установка |
+| MT7921 / MT7922 | PCIe | `14c3:7921`, `14c3:7922`, … | штатный `mt7921e` | Обычно уже в ядре |
+| MT7961 | PCIe | `14c3:7961` | штатный `mt7921e` | Обычно уже в ядре |
+
+Типичный OEM‑модуль MT7902:
+
+- **Subsystem:** AzureWave `1a3b:5524`
+- **Имя:** MediaTek MT7902 802.11ax PCIe Wireless Network Adapter [Filogic 310]
+- **Bluetooth:** тот же combo‑чип по USB (например IMC Networks `13d3:3594`)
+
+Проверка у себя:
 
 ```bash
-# Полная установка
-sudo ./install.sh install
+lspci -nnk | grep -A3 -i network
+lsusb | grep -iE '13d3|0e8d|Wireless|Bluetooth'
+```
+
+### Ноутбуки (проверено сообществом)
+
+Карта AzureWave MT7902 (`14c3:7902` / `1a3b:5524`) встречается в основном в линейках **Acer Aspire** и **Acer Extensa**:
+
+| Производитель | Модели (примеры) | Статус |
+|---------------|------------------|--------|
+| Acer | **Aspire A315-59** | ✅ Проверено в этом проекте (Wi‑Fi + BT) |
+| Acer | Aspire A314-23P, A314-35 | Сообщество / [linux-hardware.org](https://linux-hardware.org/?id=pci%3A14c3-7902-1a3b-5524) |
+| Acer | Aspire A315-24P, A114-33 | Сообщество |
+| Acer | Extensa 215-23, Extensa 215-55 | Сообщество |
+
+Список неполный: подойдёт любой ноутбук, где `lspci` показывает `14c3:7902` (и для BT — USB‑часть combo‑чипа MediaTek).
+
+> **Ядро:** out-of-tree драйверы рассчитаны на **6.6–6.19**. Нативная поддержка MT7902 ожидается в Linux **7.1+**.
+
+## Что решает
+
+- Wi‑Fi MT7902 не поднимается (устройство «unclaimed»)
+- Bluetooth MT7902: `hci` с адресом `00:00:00:00:00:00`, таймауты `Opcode … failed: -110`
+- Зависание при выключении из‑за драйвера / Docker / NetworkManager
+- Нет автозагрузки модулей после перезагрузки
+
+## Быстрый старт
+
+```bash
+# Зависимости
+sudo apt update
+sudo apt install -y build-essential linux-headers-$(uname -r) git dkms
+
+# Wi‑Fi + Bluetooth + systemd (рекомендуется)
+sudo ./mt7902.sh install-all
 
 # Перезагрузка
 sudo reboot
-
-# Проверка WiFi
-nmcli dev status | grep wlan0
 ```
 
-## 📁 Структура проекта
+По частям: `sudo ./mt7902.sh install` (Wi‑Fi) и `sudo ./mt7902.sh bluetooth` (BT; конфликтует со штатным `btusb`).
+Проверка после установки:
+
+```bash
+lsmod | grep -E 'mt7902e|btusb_mt7902'
+lspci -nnk | grep -A2 7902
+nmcli device status
+bluetoothctl show
+```
+
+## Структура проекта
 
 ```
 FIX-MediaTek-MT7902-MT7921-MT7961-WIFI/
-├── 🚀 mt7902.sh            # Универсальный скрипт (установка + патчи)
-├── 🔨 Makefile            # Основные команды
-├── 📦 gen4-mt7902/        # Community драйвер
-├── 🩹 patches/            # Патчи для ядра
-├── 📚 GUIDE_EN.md         # Полное руководство (English)
-├── 📚 GUIDE_RU.md         # Полное руководство (Русский)
-├── 📋 README.md           # Этот файл
-└── 📄 LICENSE             # Лицензия
+├── mt7902.sh              # Универсальный скрипт (Wi‑Fi, BT, system, патчи)
+├── Makefile
+├── gen4-mt7902/           # Wi‑Fi: hmtheboy154/mt7902 (ветка backport) → модуль mt7902e
+├── btusb_mt7902/          # Bluetooth: та же репа, ветка bluetooth_backport
+├── patches/               # Патчи PCI ID / метаданные для ядра
+├── GUIDE_EN.md
+├── GUIDE_RU.md
+├── README.md
+└── LICENSE
 ```
 
-## ✅ Что решает
+Источники драйверов:
 
-- **📡 WiFi не работает** - Устанавливает gen4-mt7902 драйвер
-- **⏰ Система зависает при выключении** - Оптимизирует таймауты systemd
-- **🐳 Docker останавливается долго** - Настраивает быстрые таймауты
-- **🔄 Нет автозагрузки** - Настраивает загрузку драйвера при старте
+- Wi‑Fi: [hmtheboy154/mt7902](https://github.com/hmtheboy154/mt7902) (`backport`)
+- Bluetooth: [hmtheboy154/mt7902](https://github.com/hmtheboy154/mt7902) (`bluetooth_backport`)
 
-## �️ Использование
-
-### Установка
+## Использование
 
 ```bash
-# Полная установка (рекомендуется)
-sudo ./mt7902.sh install
-
-# Только драйвер
-sudo ./mt7902.sh driver
-
-# Только системные настройки
-sudo ./mt7902.sh system
-
-# Проверка установки
-./mt7902.sh verify
-
-# Удаление
-sudo ./mt7902.sh remove
-```
-
-### Патчи для ядра
-
-```bash
-# Подготовка патчей для отправки
-./mt7902.sh patch
-
-# Проверка формата патчей
-./mt7902.sh patch-check
-```
-
-### Makefile команды
-
-```bash
-# Быстрая установка
-make quick-install
-
-# Полная установка
-sudo make install
-
-# Подготовка патчей
-make patch
-
-# Проверка патчей
-make patch-check
-
-# Проверка статуса
-make check-status
-
-# Тестирование
-make test
-
-# Диагностика
-make diagnose
-
-# Очистка
-make clean
-
-# Удаление
-sudo make uninstall
-
-# Помощь
-make help
-```
-
-## 📊 Результаты
-
-| Параметр | До установки | После установки |
-|----------|---------------|----------------|
-| WiFi | ❌ Не работает | ✅ Полностью функционален |
-| Выключение | ❌ Зависание | ✅ 15-30 секунд |
-| Docker | ❌ Бесконечный таймаут | ✅ 30 секунд |
-| NetworkManager | ❌ Долгая остановка | ✅ 15 секунд |
-| Автозагрузка | ❌ Отсутствует | ✅ Настроена |
-
-## � Диагностика
-
-### Проверка системы
-```bash
-# Статус драйвера
-lsmod | grep mt7902
-
-# Устройство
-lspci | grep -i "mediatek\|7902"
-
-# Интерфейс
-ip addr show wlan0
-
-# Сервисы
-systemctl status mt7902-driver-shutdown.service
-```
-
-### Диагностика проблем
-```bash
-# Полная диагностика
-make diagnose
-
-# Проверка установки
-./mt7902.sh verify
-
-# Статус
-make check-status
-```
-
-## � Требования
-
-- **ОС**: Ubuntu/Debian (рекомендовано), CentOS/RHEL, Fedora
-- **Ядро**: Linux 5.4+
-- **Пакеты**: build-essential, linux-headers, git, dkms
-- **Устройство**: MediaTek MT7902 (PCI ID: 14c3:7902)
-
-## 📚 Документация
-
-- **[🇬🇧 GUIDE_EN.md](GUIDE_EN.md)** - Полное руководство (English)
-- **[🇷🇺 GUIDE_RU.md](GUIDE_RU.md)** - Полное руководство (Русский)
-- **`./mt7902.sh help`** - Справка по универсальному скрипту
-- **`make help`** - Справка по Makefile
-
-## 🔄 Обслуживание
-
-### Обновление драйвера
-```bash
-make clean
-make gen4-driver
-sudo make install-gen4
-```
-
-### Сброс настроек
-```bash
-sudo ./mt7902.sh remove
-sudo ./mt7902.sh install
-```
-
-## 📞 Поддержка
-
-### Быстрая помощь
-```bash
-# Диагностика
-make diagnose
-
-# Проверка статуса
-make check-status
-
-# Справка
+sudo ./mt7902.sh install-all  # Wi‑Fi + Bluetooth + systemd
+sudo ./mt7902.sh install      # Wi‑Fi + системные настройки
+sudo ./mt7902.sh driver       # только Wi‑Fi драйвер
+sudo ./mt7902.sh bluetooth    # Bluetooth драйвер + прошивка
+sudo ./mt7902.sh system       # только systemd-оптимизации
+./mt7902.sh verify            # проверка
+./mt7902.sh diagnose          # диагностика
+sudo ./mt7902.sh remove       # удаление настроек/автозагрузки
 ./mt7902.sh help
-make help
 ```
 
-### Отчеты о проблемах
-- **GitHub Issues**: Сообщить о проблеме
-- **Диагностика**: Используйте `make diagnose` для сбора информации
+Makefile:
 
-## 🎯 Версия
+```bash
+make quick-install    # через mt7902.sh install
+sudo make install     # сборка/установка Wi‑Fi
+sudo make bluetooth   # сборка/установка Bluetooth
+make check-status
+make diagnose
+sudo make uninstall
+```
 
-**Версия: 4.0 (полная унификация)**
-- ✅ Единый скрипт для установки и патчей
-- ✅ Двуязычная документация
-- ✅ Упрощенный Makefile
-- ✅ Минимальное количество файлов
+> `mt7921e_simple_patch.c` — устаревший stub; для MT7902 используйте `mt7902e` / `btusb_mt7902`.
+## Bluetooth — кратко
+
+1. Устанавливается модуль `btusb_mt7902` и прошивка `mediatek/BT_RAM_CODE_MT7902_1_1_hdr.bin`
+2. Штатные `btusb` и `btmtk` **блокируются** (`/etc/modprobe.d/blacklist_btusb.conf`) — они конфликтуют с backport
+3. Bluetooth на USB‑адаптерах Realtek через `btusb` после этого **не будет** работать; Wi‑Fi USB (например `rtw88`) не затрагивается
+
+Подробности: [GUIDE_RU.md](GUIDE_RU.md) / [GUIDE_EN.md](GUIDE_EN.md).
+
+## Требования
+
+- Ubuntu/Debian (рекомендуется), Fedora, RHEL-подобные
+- Ядро **6.6+** (для текущего backport); Secure Boot лучше выключить или подписать модули
+- Пакеты: `build-essential`, `linux-headers-$(uname -r)`, `git`, `dkms`
+- Устройство: MediaTek **MT7902** (`14c3:7902`)
+
+## Документация
+
+- [GUIDE_RU.md](GUIDE_RU.md) — полное руководство (RU)
+- [GUIDE_EN.md](GUIDE_EN.md) — complete guide (EN)
+- `./mt7902.sh help` / `make help`
+
+## Версия
+
+**5.0** — Wi‑Fi (`mt7902e`) + Bluetooth (`btusb_mt7902`), описание поддерживаемого железа, DKMS.
 
 ---
 
-**🎉 Готово к использованию!**
-
-Запустите `sudo ./mt7902.sh install` для полной установки.
-
-**Ключевые команды:**
-- `sudo ./mt7902.sh install` - полная установка
-- `./mt7902.sh patch` - подготовка патчей
-- `make diagnose` - диагностика
-- `./mt7902.sh help` - справка
+```bash
+sudo ./mt7902.sh install-all && sudo reboot
+```

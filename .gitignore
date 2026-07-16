@@ -1,0 +1,23 @@
+# Build artifacts
+*.o
+*.ko
+*.mod
+*.mod.c
+*.cmd
+*.order
+*.symvers
+.tmp_versions/
+Module.symvers
+modules.order
+*.o.d
+
+# Driver trees are cloned by mt7902.sh from hmtheboy154/mt7902
+gen4-mt7902/
+btusb_mt7902/
+
+# Editor / OS
+*~
+.DS_Store
+.idea/
+.vscode/
+*.swp

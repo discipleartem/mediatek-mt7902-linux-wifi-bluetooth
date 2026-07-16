@@ -1,13 +1,11 @@
 #!/bin/bash
 
-# MediaTek MT7902 WiFi - Универсальный скрипт
-# Объединяет: установку драйвера, системные настройки, отправку патчей
-# Версия: 4.0 (полная унификация)
-# Дата: 25 февраля 2026
+# MediaTek MT7902 WiFi + Bluetooth — универсальный скрипт
+# Версия: 5.0
+# Дата: 16 июля 2026
 
 set -e
 
-# Цвета для вывода
 RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
@@ -15,7 +13,17 @@ BLUE='\033[0;34m'
 CYAN='\033[0;36m'
 NC='\033[0m'
 
-# Функции вывода
+WIFI_DIR="gen4-mt7902"
+BT_DIR="btusb_mt7902"
+WIFI_MOD="mt7902e"
+BT_MOD="btusb_mt7902"
+WIFI_REPO="https://github.com/hmtheboy154/mt7902.git"
+WIFI_BRANCH="backport"
+BT_BRANCH="bluetooth_backport"
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+cd "$SCRIPT_DIR"
+
 print_info() { echo -e "${BLUE}ℹ️  $1${NC}"; }
 print_success() { echo -e "${GREEN}✅ $1${NC}"; }
 print_warning() { echo -e "${YELLOW}⚠️  $1${NC}"; }
@@ -24,98 +32,145 @@ print_step() { echo -e "${CYAN}🔄 $1${NC}"; }
 
 print_header() {
     echo -e "${BLUE}"
-    echo "🚀 MediaTek MT7902 WiFi - Универсальный скрипт"
-    echo "=========================================="
+    echo "🚀 MediaTek MT7902 WiFi + Bluetooth"
+    echo "===================================="
     echo -e "${NC}"
 }
 
-# Проверка прав
 check_root() {
-    [[ $EUID -ne 0 ]] && { print_error "Требуются права суперпользователя: sudo $0"; exit 1; }
+    [[ $EUID -ne 0 ]] && { print_error "Требуются права суперпользователя: sudo $0 $*"; exit 1; }
 }
 
-# Проверка системы
 check_system() {
     print_info "Проверка системы..."
     [[ -f /etc/os-release ]] && source /etc/os-release && print_info "Дистрибутив: $PRETTY_NAME"
     print_info "Ядро: $(uname -r)"
-    
-    if lspci | grep -qi "mediatek\|14c3:7902"; then
-        print_success "MediaTek MT7902 обнаружен"
+
+    if lspci -nn 2>/dev/null | grep -qi "14c3:7902\|mediatek.*7902"; then
+        print_success "MediaTek MT7902 (PCIe) обнаружен"
     else
-        print_warning "MediaTek MT7902 не обнаружен"
+        print_warning "MediaTek MT7902 (14c3:7902) не обнаружен в lspci"
     fi
-    
+
+    if lsusb 2>/dev/null | grep -qi "13d3:3594\|MediaTek"; then
+        print_info "Возможный USB Bluetooth MediaTek/IMC найден"
+    fi
+
     command -v systemctl &>/dev/null || { print_error "systemd не найден"; exit 1; }
     print_success "Система проверена"
 }
 
-# Установка зависимостей
 install_deps() {
     print_step "Установка зависимостей"
     if command -v apt-get &>/dev/null; then
-        apt-get update && apt-get install -y build-essential linux-headers-$(uname -r) git dkms
+        apt-get update && apt-get install -y build-essential "linux-headers-$(uname -r)" git dkms
     elif command -v yum &>/dev/null; then
-        yum groupinstall -y "Development Tools" && yum install -y kernel-devel-$(uname -r) git dkms
+        yum groupinstall -y "Development Tools" && yum install -y "kernel-devel-$(uname -r)" git dkms
     elif command -v dnf &>/dev/null; then
-        dnf groupinstall -y "Development Tools" && dnf install -y kernel-devel-$(uname -r) git dkms
+        dnf groupinstall -y "Development Tools" && dnf install -y "kernel-devel-$(uname -r)" git dkms
     else
         print_error "Не поддерживаемый пакетный менеджер"; exit 1
     fi
     print_success "Зависимости установлены"
 }
 
-# Остановка сервисов
+ensure_wifi_sources() {
+    if [[ ! -d "$WIFI_DIR/.git" && ! -f "$WIFI_DIR/Makefile" ]]; then
+        print_step "Клонирование Wi‑Fi драйвера ($WIFI_BRANCH)"
+        git clone --depth 1 -b "$WIFI_BRANCH" "$WIFI_REPO" "$WIFI_DIR"
+    fi
+}
+
+ensure_bt_sources() {
+    if [[ ! -d "$BT_DIR/.git" && ! -f "$BT_DIR/Makefile" ]]; then
+        print_step "Клонирование Bluetooth драйвера ($BT_BRANCH)"
+        git clone --depth 1 -b "$BT_BRANCH" "$WIFI_REPO" "$BT_DIR"
+    fi
+}
+
 stop_services() {
     print_step "Остановка конфликтующих сервисов"
-    systemctl is-active --quiet NetworkManager && systemctl stop NetworkManager
-    lsmod | grep -q mt7902 && modprobe -r mt7902 2>/dev/null || true
-    systemctl is-active --quiet docker && systemctl stop docker
+    systemctl is-active --quiet NetworkManager && systemctl stop NetworkManager || true
+    modprobe -r "$WIFI_MOD" 2>/dev/null || true
+    modprobe -r mt7902 2>/dev/null || true
+    systemctl is-active --quiet docker && systemctl stop docker || true
     print_success "Сервисы остановлены"
 }
 
-# Установка драйвера
 install_driver() {
-    print_step "Установка WiFi драйвера"
-    [[ ! -d "gen4-mt7902" ]] && { print_error "Директория gen4-mt7902 не найдена"; exit 1; }
-    
-    cd gen4-mt7902
-    print_info "Сборка драйвера..."
-    make -j$(nproc)
-    print_info "Установка драйвера..."
-    make install -j$(nproc)
-    print_info "Установка прошивки..."
-    make install_fw
-    cd ..
-    print_success "Драйвер установлен"
+    print_step "Установка Wi‑Fi драйвера ($WIFI_MOD)"
+    ensure_wifi_sources
+    [[ ! -d "$WIFI_DIR" ]] && { print_error "Директория $WIFI_DIR не найдена"; exit 1; }
+
+    (
+        cd "$WIFI_DIR"
+        print_info "Сборка..."
+        make -j"$(nproc)"
+        print_info "Установка модуля..."
+        make install -j"$(nproc)"
+        print_info "Установка прошивки..."
+        make install_fw
+    )
+    print_success "Wi‑Fi драйвер установлен"
 }
 
-# Настройка автозагрузки
-setup_autoload() {
-    print_step "Настройка автозагрузки драйвера"
-    echo "mt7902" > /etc/modules-load.d/mt7902.conf
-    cat > /etc/modprobe.d/mt7902.conf << 'EOF'
-# MediaTek MT7902 WiFi driver configuration
-# mt7902
+install_bluetooth() {
+    print_step "Установка Bluetooth драйвера ($BT_MOD)"
+    ensure_bt_sources
+    [[ ! -d "$BT_DIR" ]] && { print_error "Директория $BT_DIR не найдена"; exit 1; }
+
+    systemctl stop bluetooth 2>/dev/null || true
+    modprobe -r btusb 2>/dev/null || true
+    modprobe -r btmtk 2>/dev/null || true
+
+    (
+        cd "$BT_DIR"
+        print_info "Сборка..."
+        make -j"$(nproc)"
+        print_info "Установка модуля..."
+        make install -j"$(nproc)"
+        print_info "Установка прошивки BT..."
+        make install_fw
+    )
+
+    print_step "Blacklist штатных btusb/btmtk"
+    cat > /etc/modprobe.d/blacklist_btusb.conf << 'EOF'
+# Stock modules conflict with btusb_mt7902 (MediaTek MT7902 Bluetooth)
+blacklist btusb
+blacklist btmtk
 EOF
-    print_success "Автозагрузка настроена"
+
+    echo "$BT_MOD" > /etc/modules-load.d/btusb_mt7902.conf
+
+    depmod -a
+    modprobe "$BT_MOD" || print_warning "modprobe $BT_MOD не удался — перезагрузите систему"
+    systemctl start bluetooth 2>/dev/null || true
+
+    print_success "Bluetooth драйвер установлен"
+    print_warning "Bluetooth на USB‑адаптерах через штатный btusb больше не будет работать"
 }
 
-# Системные настройки
+setup_autoload() {
+    print_step "Настройка автозагрузки Wi‑Fi"
+    echo "$WIFI_MOD" > /etc/modules-load.d/mt7902.conf
+    cat > /etc/modprobe.d/mt7902.conf << EOF
+# MediaTek MT7902 WiFi — модуль $WIFI_MOD
+EOF
+    print_success "Автозагрузка Wi‑Fi настроена"
+}
+
 apply_system_settings() {
     print_step "Применение системных настроек"
-    
-    # Системные таймауты
+
     mkdir -p /etc/systemd/system.conf.d
     cat > /etc/systemd/system.conf.d/99-timeouts.conf << 'EOF'
-# MediaTek MT7902 WiFi - оптимизация таймаутов
+# MediaTek MT7902 — оптимизация таймаутов
 DefaultTimeoutStartSec=30s
 DefaultTimeoutStopSec=30s
 DefaultTimeoutAbortSec=10s
 ShutdownWatchdogSec=1min
 EOF
-    
-    # Docker
+
     mkdir -p /etc/systemd/system/docker.service.d
     cat > /etc/systemd/system/docker.service.d/override.conf << 'EOF'
 [Service]
@@ -125,8 +180,7 @@ KillMode=mixed
 KillSignal=SIGINT
 SendSIGKILL=yes
 EOF
-    
-    # NetworkManager
+
     mkdir -p /etc/systemd/system/NetworkManager.service.d
     cat > /etc/systemd/system/NetworkManager.service.d/override.conf << 'EOF'
 [Service]
@@ -135,14 +189,13 @@ TimeoutStopSec=15s
 KillMode=mixed
 SendSIGKILL=yes
 EOF
-    
+
     print_success "Системные настройки применены"
 }
 
-# Создание сервисов
 create_services() {
     print_step "Создание сервисов"
-    
+
     cat > /etc/systemd/system/docker-shutdown.service << 'EOF'
 [Unit]
 Description=Stop Docker containers before shutdown
@@ -151,101 +204,109 @@ Before=shutdown.target reboot.target halt.target
 
 [Service]
 Type=oneshot
-ExecStart=/usr/bin/docker stop $(docker ps -q)
-ExecStart=/usr/bin/docker kill $(docker ps -q)
+ExecStart=/bin/bash -c '/usr/bin/docker stop $(/usr/bin/docker ps -q) 2>/dev/null || true'
+ExecStart=/bin/bash -c '/usr/bin/docker kill $(/usr/bin/docker ps -q) 2>/dev/null || true'
 TimeoutStartSec=30s
 RemainAfterExit=yes
 
 [Install]
 WantedBy=halt.target reboot.target shutdown.target
 EOF
-    
-    cat > /etc/systemd/system/mt7902-driver-shutdown.service << 'EOF'
+
+    cat > /etc/systemd/system/mt7902-driver-shutdown.service << EOF
 [Unit]
-Description=Unload mt7902 driver before shutdown
+Description=Unload ${WIFI_MOD} driver before shutdown
 DefaultDependencies=no
 Before=shutdown.target reboot.target halt.target
 After=NetworkManager.service
 
 [Service]
 Type=oneshot
-ExecStart=/sbin/modprobe -r mt7902
+ExecStart=/sbin/modprobe -r ${WIFI_MOD}
 TimeoutStartSec=10s
 RemainAfterExit=yes
 
 [Install]
 WantedBy=halt.target reboot.target shutdown.target
 EOF
-    
+
     print_success "Сервисы созданы"
 }
 
-# Активация сервисов
 enable_services() {
     print_step "Активация сервисов"
     systemctl daemon-reload
-    command -v docker &>/dev/null && systemctl enable docker-shutdown.service
+    command -v docker &>/dev/null && systemctl enable docker-shutdown.service || true
     systemctl enable mt7902-driver-shutdown.service
     print_success "Сервисы активированы"
 }
 
-# Загрузка драйвера
 load_driver() {
-    print_step "Загрузка драйвера и запуск сервисов"
-    modprobe mt7902
-    lsmod | grep -q mt7902 && print_success "Драйвер загружен" || { print_error "Драйвер не загружен"; return 1; }
-    
-    systemctl start NetworkManager
-    systemctl is-active --quiet NetworkManager && print_success "NetworkManager запущен"
-    
-    command -v docker &>/dev/null && systemctl start docker && systemctl is-active --quiet docker && print_success "Docker запущен"
+    print_step "Загрузка Wi‑Fi драйвера"
+    depmod -a
+    modprobe "$WIFI_MOD" || { print_error "Драйвер $WIFI_MOD не загружен"; return 1; }
+    lsmod | grep -q "$WIFI_MOD" && print_success "Драйвер $WIFI_MOD загружен"
+
+    systemctl start NetworkManager 2>/dev/null || true
+    systemctl is-active --quiet NetworkManager && print_success "NetworkManager запущен" || true
+
+    command -v docker &>/dev/null && systemctl start docker 2>/dev/null || true
 }
 
-# Проверка установки
 verify_installation() {
     print_step "Проверка установки"
-    
-    echo -e "\n📊 Статус:"
-    lsmod | grep -q mt7902 && echo "  ✅ Драйвер mt7902 загружен" || echo "  ❌ Драйвер не загружен"
-    lspci | grep -qi "mediatek\|14c3:7902" && echo "  ✅ MediaTek MT7902 обнаружен" || echo "  ❌ Устройство не найдено"
-    ip link show wlan0 &>/dev/null && echo "  ✅ Интерфейс wlan0 доступен" || echo "  ❌ Интерфейс не найден"
-    
+
+    echo -e "\n📊 Wi‑Fi:"
+    lsmod | grep -q "$WIFI_MOD" && echo "  ✅ Модуль $WIFI_MOD загружен" || echo "  ❌ Модуль $WIFI_MOD не загружен"
+    lspci -nn 2>/dev/null | grep -qi "14c3:7902" && echo "  ✅ PCI 14c3:7902 обнаружен" || echo "  ❌ PCI 14c3:7902 не найден"
+    ip -br link 2>/dev/null | grep -qiE 'wlan|wlp' && echo "  ✅ Беспроводной интерфейс есть" || echo "  ❌ Wi‑Fi интерфейс не найден"
+
+    echo -e "\n📶 Bluetooth:"
+    lsmod | grep -q "$BT_MOD" && echo "  ✅ Модуль $BT_MOD загружен" || echo "  ❌ Модуль $BT_MOD не загружен"
+    [[ -f /etc/modprobe.d/blacklist_btusb.conf ]] && echo "  ✅ blacklist btusb/btmtk" || echo "  ❌ blacklist btusb не настроен"
+    if command -v bluetoothctl &>/dev/null; then
+        bluetoothctl show 2>/dev/null | grep -qi "Powered: yes" && echo "  ✅ Контроллер Powered" || echo "  ⚠️  Контроллер не Powered / недоступен"
+    fi
+
     echo -e "\n⚙️ Сервисы:"
-    systemctl is-enabled mt7902-driver-shutdown-service && echo "  ✅ mt7902-driver-shutdown.service" || echo "  ❌ mt7902-driver-shutdown.service"
-    systemctl is-enabled docker-shutdown.service 2>/dev/null && echo "  ✅ docker-shutdown.service" || echo "  ❌ docker-shutdown.service"
-    
+    systemctl is-enabled mt7902-driver-shutdown.service &>/dev/null && echo "  ✅ mt7902-driver-shutdown.service" || echo "  ❌ mt7902-driver-shutdown.service"
+    systemctl is-enabled docker-shutdown.service &>/dev/null && echo "  ✅ docker-shutdown.service" || echo "  ⚠️  docker-shutdown.service"
+
     echo -e "\n📁 Конфигурации:"
     [[ -f /etc/systemd/system.conf.d/99-timeouts.conf ]] && echo "  ✅ Системные таймауты" || echo "  ❌ Системные таймауты"
-    [[ -f /etc/modprobe.d/mt7902.conf ]] && echo "  ✅ Параметры драйвера" || echo "  ❌ Параметры драйвера"
-    [[ -f /etc/modules-load.d/mt7902.conf ]] && echo "  ✅ Автозагрузка" || echo "  ❌ Автозагрузка"
+    [[ -f /etc/modules-load.d/mt7902.conf ]] && echo "  ✅ Автозагрузка Wi‑Fi" || echo "  ❌ Автозагрузка Wi‑Fi"
+    [[ -f /etc/modules-load.d/btusb_mt7902.conf ]] && echo "  ✅ Автозагрузка Bluetooth" || echo "  ⚠️  Автозагрузка Bluetooth"
 }
 
-# Удаление
 remove_installation() {
     print_step "Удаление установки"
-    print_warning "Удаление драйвера и системных настроек..."
-    
-    read -p "Вы уверены? (y/N): " -n 1 -r
+    print_warning "Удаление драйверных настроек и системных файлов..."
+
+    read -r -p "Вы уверены? (y/N): " -n 1 REPLY
     echo
     [[ $REPLY =~ ^[Yy]$ ]] || { print_info "Отмена"; exit 0; }
-    
-    modprobe -r mt7902 2>/dev/null || true
+
+    modprobe -r "$WIFI_MOD" 2>/dev/null || true
+    modprobe -r "$BT_MOD" 2>/dev/null || true
+
     rm -f /etc/modules-load.d/mt7902.conf
+    rm -f /etc/modules-load.d/btusb_mt7902.conf
     rm -f /etc/modprobe.d/mt7902.conf
+    rm -f /etc/modprobe.d/blacklist_btusb.conf
     rm -f /etc/systemd/system.conf.d/99-timeouts.conf
     rm -f /etc/systemd/system/docker.service.d/override.conf
     rm -f /etc/systemd/system/NetworkManager.service.d/override.conf
     rm -f /etc/systemd/system/docker-shutdown.service
     rm -f /etc/systemd/system/mt7902-driver-shutdown.service
-    
+
     systemctl disable docker-shutdown.service 2>/dev/null || true
     systemctl disable mt7902-driver-shutdown.service 2>/dev/null || true
     systemctl daemon-reload
-    
-    print_success "Удаление завершено"
+
+    print_success "Конфигурация удалена (модули .ko в /lib/modules можно убрать через make uninstall в gen4-mt7902 / btusb_mt7902)"
 }
 
-# ===== ФУНКЦИИ PATCH SUBMISSION =====
+# ===== PATCH HELPERS (unchanged logic for kernel tree) =====
 
 print_patch_header() {
     echo -e "${BLUE}"
@@ -254,72 +315,43 @@ print_patch_header() {
     echo -e "${NC}"
 }
 
-# Проверка окружения для патчей
 check_patch_environment() {
     print_info "1. Проверка окружения для патчей..."
-    
-    if ! command -v git &> /dev/null; then
-        print_error "Git не установлен"
-        exit 1
-    fi
-    
+    command -v git &>/dev/null || { print_error "Git не установлен"; exit 1; }
     if [[ ! -f "MAINTAINERS" ]] || [[ ! -d "drivers/net/wireless/mediatek/mt76" ]]; then
         print_error "Не в дереве исходников ядра Linux"
-        print_info "Перейдите в директорию с исходниками ядра"
         exit 1
     fi
-    
-    if [[ ! -f "scripts/get_maintainer.pl" ]] || [[ ! -f "scripts/checkpatch.pl" ]]; then
-        print_error "Скрипты ядра не найдены"
-        exit 1
-    fi
-    
     print_success "Окружение для патчей проверено"
 }
 
-# Проверка патчей
 check_patches() {
     print_info "2. Проверка патчей..."
-    
     PATCHES_DIR=""
     if [[ -f "patches/0001-net-wireless-mediatek-mt76-mt7921-Add-support-for-PCI-ID-7902.patch" ]]; then
         PATCHES_DIR="patches"
     elif [[ -f "0001-net-wireless-mediatek-mt76-mt7921-Add-support-for-PCI-ID-7902.patch" ]]; then
         PATCHES_DIR="."
     else
-        print_error "Патч не найден"
-        exit 1
+        print_error "Патч не найден"; exit 1
     fi
-    
-    if ! scripts/checkpatch.pl "$PATCHES_DIR/0001-net-wireless-mediatek-mt76-mt7921-Add-support-for-PCI-ID-7902.patch"; then
-        print_error "Патч не прошел проверку checkpatch.pl"
-        exit 1
-    fi
-    
+    scripts/checkpatch.pl "$PATCHES_DIR/0001-net-wireless-mediatek-mt76-mt7921-Add-support-for-PCI-ID-7902.patch" || {
+        print_error "Патч не прошел checkpatch.pl"; exit 1
+    }
     print_success "Формат патча корректен"
 }
 
-# Получение мейнтейнеров
 get_maintainers() {
     print_info "3. Получение списка мейнтейнеров..."
-    
     MAINTAINERS=$(scripts/get_maintainer.pl "$PATCHES_DIR/0001-net-wireless-mediatek-mt76-mt7921-Add-support-for-PCI-ID-7902.patch")
-    
-    echo "📋 Найденные мейнтейнеры:"
     echo "$MAINTAINERS"
-    
     TO_EMAIL=$(echo "$MAINTAINERS" | grep -E '<.*@.*>' | head -5 | tr '\n' ' ')
     CC_LIST=$(echo "$MAINTAINERS" | grep -E '<.*@.*>' | tail -n +6 | tr '\n' ' ')
-    
     print_success "Список мейнтейнеров получен"
 }
 
-# Создание команды отправки
 create_submission_command() {
     print_info "4. Создание команды отправки..."
-    
-    echo ""
-    echo "📤 Команда отправки:"
     echo ""
     echo "git send-email --to=\"$TO_EMAIL\" --cc=\"$CC_LIST\" \\"
     echo "  --cc-cmd='scripts/get_maintainer.pl --norolestats $PATCHES_DIR/0001-*.patch' \\"
@@ -328,60 +360,22 @@ create_submission_command() {
     echo ""
 }
 
-# Создание полного патча проекта
 create_project_patch() {
     print_info "Создание полного патча проекта..."
-    
-    if [[ ! -d "patches" ]]; then
-        mkdir patches
-    fi
-    
+    mkdir -p patches
     cat > patches/MT7902-complete-fix.patch << 'EOF'
 From: MediaTek MT7902 WiFi Project <maintainer@example.com>
-Date: Tue, 25 Feb 2026 19:21:00 +0200
 Subject: [PATCH] Complete MediaTek MT7902 WiFi fix with system optimizations
 
-This patch includes:
-- Support for MediaTek MT7902 WiFi adapter (PCI ID: 14c3:7902)
-- System shutdown fixes to prevent hanging
-- Docker and NetworkManager timeout optimizations
-- Proper driver unloading during shutdown
+See project README / GUIDE for out-of-tree mt7902e + btusb_mt7902 installation.
+For in-tree, prefer MediaTek upstream MT7902 series (Linux 7.1+).
 
 BugLink: https://github.com/discipleartem/FIX-MediaTek-MT7902-MT7921-MT7961-WIFI
 Signed-off-by: MediaTek MT7902 WiFi Project <maintainer@example.com>
----
- drivers/net/wireless/mediatek/mt76/mt7921/pci.c | 12 ++++++++++++
- 1 file changed, 12 insertions(+)
-
---- a/drivers/net/wireless/mediatek/mt76/mt7921/pci.c
-+++ b/drivers/net/wireless/mediatek/mt76/mt7921/pci.c
-@@ -97,6 +97,18 @@ static const struct pci_device_id mt7921
- 	{ PCI_DEVICE(0x14c3, 0x7961) },
- 	{ PCI_DEVICE(0x14c3, 0x7922) },
- 	{ PCI_DEVICE(0x14c3, 0x7925),
-+	/* MediaTek MT7902 WiFi adapter */
-+	.driver_data = (kernel_ulong_t)MT7921_FIRMWARE_MT7922,
-+	{ PCI_DEVICE(0x14c3, 0x7902) },
-+	.driver_data = (kernel_ulong_t)MT7921_FIRMWARE_MT7922,
-+	{ PCI_DEVICE(0x14c3, 0x7902),
-+		.driver_data = (kernel_ulong_t)MT7921_FIRMWARE_MT7922,
-+	},
-+	/* Additional MT7902 variants */
-+	{ PCI_DEVICE(0x14c3, 0x7902),
-+		.driver_data = (kernel_ulong_t)MT7921_FIRMWARE_MT7922,
-+	},
-+	{ PCI_DEVICE(0x14c3, 0x7902) },
- 	{ }
- };
- 
 EOF
-    
-    print_success "Полный патч проекта создан: patches/MT7902-complete-fix.patch"
+    print_success "Заглушка патча: patches/MT7902-complete-fix.patch"
 }
 
-# ===== ОСНОВНЫЕ ФУНКЦИИ УСТАНОВКИ =====
-
-# Полная установка
 full_install() {
     print_header
     check_root
@@ -398,7 +392,6 @@ full_install() {
     show_instructions
 }
 
-# Только драйвер
 install_only_driver() {
     print_header
     check_root
@@ -412,7 +405,39 @@ install_only_driver() {
     show_instructions
 }
 
-# Только системные настройки
+install_only_bluetooth() {
+    print_header
+    check_root
+    check_system
+    install_deps
+    install_bluetooth
+    verify_installation
+    echo ""
+    print_success "Bluetooth установлен!"
+    print_info "🔄 Рекомендуется: sudo reboot"
+    print_info "📡 Проверка: bluetoothctl show"
+}
+
+install_all() {
+    print_header
+    check_root
+    check_system
+    install_deps
+    stop_services
+    install_driver
+    setup_autoload
+    apply_system_settings
+    create_services
+    enable_services
+    load_driver
+    install_bluetooth
+    verify_installation
+    echo ""
+    print_success "Полная установка Wi‑Fi + Bluetooth завершена!"
+    print_info "🔄 Обязательно: sudo reboot"
+    print_info "📡 nmcli device status && bluetoothctl show"
+}
+
 install_only_system() {
     print_header
     check_root
@@ -425,7 +450,6 @@ install_only_system() {
     print_info "🔄 Перезагрузите систему: sudo reboot"
 }
 
-# Подготовка патчей
 prepare_patches() {
     print_patch_header
     check_patch_environment
@@ -436,122 +460,108 @@ prepare_patches() {
     print_success "Подготовка патчей завершена!"
 }
 
-# Показ инструкций
 show_instructions() {
     echo ""
-    print_success "Установка завершена!"
+    print_success "Установка Wi‑Fi завершена!"
     echo ""
-    print_info "🔄 Обязательно перезагрузите систему:"
+    print_info "🔄 Перезагрузка:"
     echo "  sudo reboot"
     echo ""
-    print_info "📡 Проверка WiFi после перезагрузки:"
-    echo "  lsmod | grep mt7902"
-    echo "  ip addr show wlan0"
-    echo "  nmcli dev status | grep wlan0"
+    print_info "📶 Bluetooth (отдельно):"
+    echo "  sudo $0 bluetooth"
     echo ""
-    print_info "📚 Документация: GUIDE_EN.md / GUIDE_RU.md"
+    print_info "📡 Проверка:"
+    echo "  lsmod | grep -E 'mt7902e|btusb_mt7902'"
+    echo "  nmcli device status"
+    echo "  bluetoothctl show"
+    echo ""
+    print_info "📚 GUIDE_EN.md / GUIDE_RU.md"
 }
 
-# Показ справки
 show_help() {
-    echo -e "${BLUE}MediaTek MT7902 WiFi - Универсальный скрипт${NC}"
+    echo -e "${BLUE}MediaTek MT7902 WiFi + Bluetooth${NC}"
     echo ""
     echo "Использование: $0 [команда]"
     echo ""
     echo "🚀 Установка:"
-    echo "  install      Полная установка (драйвер + системные настройки)"
-    echo "  driver       Только установка драйвера"
-    echo "  system       Только системные настройки"
+    echo "  install-all  Wi‑Fi + Bluetooth + systemd (рекомендуется)"
+    echo "  install      Wi‑Fi + системные настройки"
+    echo "  driver       Только Wi‑Fi (mt7902e)"
+    echo "  bluetooth    Только Bluetooth (btusb_mt7902)"
+    echo "  system       Только systemd-оптимизации"
     echo "  verify       Проверка установки"
-    echo "  remove       Удаление установки"
+    echo "  remove       Удаление конфигурации"
     echo ""
     echo "📤 Патчи:"
-    echo "  patch        Подготовка патчей для отправки в ядро"
+    echo "  patch        Подготовка патчей для ядра"
     echo "  patch-check  Проверка формата патчей"
     echo ""
     echo "🔍 Диагностика:"
-    echo "  status       Проверка статуса системы"
+    echo "  status       Статус"
     echo "  diagnose     Полная диагностика"
     echo ""
-    echo "📖 Справка:"
-    echo "  help         Эта справка"
-    echo ""
     echo "Примеры:"
-    echo "  sudo $0 install     # Полная установка"
-    echo "  sudo $0 driver      # Только драйвер"
-    echo "  $0 patch            # Подготовка патчей"
+    echo "  sudo $0 install-all"
+    echo "  sudo $0 bluetooth"
     echo ""
-    echo "📚 Документация: GUIDE_EN.md / GUIDE_RU.md"
+    echo "📚 GUIDE_EN.md / GUIDE_RU.md / README.md"
 }
 
-# Проверка статуса
 check_status() {
     print_header
     verify_installation
 }
 
-# Диагностика
 run_diagnose() {
     print_header
-    echo "🔍 Полная диагностика системы:"
-    echo "============================"
+    echo "🔍 Полная диагностика:"
+    echo "======================"
     echo ""
     echo "📋 Система:"
     uname -a
     echo ""
-    echo "🔧 Драйверы WiFi:"
-    lsmod | grep -E "(mt|cfg|mac)"
+    echo "💻 DMI:"
+    cat /sys/class/dmi/id/sys_vendor 2>/dev/null; cat /sys/class/dmi/id/product_name 2>/dev/null
     echo ""
-    echo "📡 PCI устройства:"
-    lspci | grep -i "network\|wireless\|mediatek"
+    echo "🔧 Модули:"
+    lsmod | grep -E 'mt7902|btusb|btmtk|cfg80211|mac80211' || true
     echo ""
-    echo "🌐 Сетевые интерфейсы:"
-    ip link show
+    echo "📡 PCI:"
+    lspci -nnk | grep -A3 -i 'network\|mediatek\|7902' || true
     echo ""
-    echo "⚙️ Системные таймауты:"
-    systemctl show docker --property=TimeoutStopUSec 2>/dev/null || echo "  Docker не настроен"
-    systemctl show NetworkManager --property=TimeoutStopUSec 2>/dev/null || echo "  NetworkManager не настроен"
+    echo "🔌 USB:"
+    lsusb | grep -iE '13d3|0e8d|Wireless|Bluetooth|MediaTek|Realtek' || true
     echo ""
-    echo "📝 Логи (последние 5 строк):"
-    journalctl -b -p err | tail -5 || echo "  Ошибки не найдены"
+    echo "🌐 Интерфейсы:"
+    ip -br link || true
+    echo ""
+    echo "📶 Bluetooth:"
+    bluetoothctl show 2>/dev/null | head -20 || echo "  bluetoothctl недоступен"
+    echo ""
+    echo "📝 Логи:"
+    journalctl -b -p err 2>/dev/null | tail -5 || true
 }
 
-# Обработка команд
 case "${1:-help}" in
-    install)
-        full_install
-        ;;
-    driver)
-        install_only_driver
-        ;;
-    system)
-        install_only_system
-        ;;
-    verify)
-        check_status
-        ;;
+    install-all|all) install_all ;;
+    install) full_install ;;
+    driver) install_only_driver ;;
+    bluetooth|bt) install_only_bluetooth ;;
+    system) install_only_system ;;
+    verify|status) check_status ;;
     remove)
         print_header
         check_root
         remove_installation
         ;;
-    patch)
-        prepare_patches
-        ;;
+    patch) prepare_patches ;;
     patch-check)
         print_patch_header
         check_patch_environment
         check_patches
         ;;
-    status)
-        check_status
-        ;;
-    diagnose)
-        run_diagnose
-        ;;
-    help|--help|-h)
-        show_help
-        ;;
+    diagnose) run_diagnose ;;
+    help|--help|-h) show_help ;;
     *)
         print_error "Неизвестная команда: $1"
         show_help

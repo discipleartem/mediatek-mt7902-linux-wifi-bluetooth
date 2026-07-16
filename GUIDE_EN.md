@@ -1,412 +1,299 @@
-# MediaTek MT7902 WiFi - Complete Guide
+# MediaTek MT7902 WiFi + Bluetooth — Complete Guide
 
-## 🎯 Overview
+## Overview
 
-Solution for MediaTek MT7902 WiFi adapter (PCI ID: 14c3:7902) on Linux. Includes driver, system optimizations, and fixes for shutdown hanging issues.
+A Linux fix for the built-in **MediaTek MT7902** (Filogic 310) combo adapter: PCIe Wi‑Fi, USB Bluetooth, firmware, autoload, and shutdown timeout tuning.
 
-## 🚀 Quick Start
+On kernels **before 7.1**, MT7902 is often left unclaimed. This project installs community backport drivers and system settings.
+
+## Supported Hardware
+
+### Network cards / chipsets
+
+| Chipset | Role | IDs | Module |
+|---------|------|-----|--------|
+| **MT7902** | Wi‑Fi 6 PCIe | PCI `14c3:7902`, AzureWave subsystem `1a3b:5524` | `mt7902e` |
+| **MT7902** | Bluetooth USB (combo) | often USB `13d3:3594` (IMC Networks / MediaTek) | `btusb_mt7902` |
+| MT7921 / MT7922 | Wi‑Fi PCIe | `14c3:7921`, `14c3:7922`, … | in-tree `mt7921e` |
+| MT7961 | Wi‑Fi PCIe | `14c3:7961` | in-tree `mt7921e` |
+
+System name: *MediaTek MT7902 802.11ax PCIe Wireless Network Adapter [Filogic 310]*.
+
+Check your machine:
 
 ```bash
-# Full installation
-sudo ./mt7902.sh install
+lspci -nnk | grep -A3 -i 'network\|mediatek\|7902'
+lsusb | grep -iE '13d3:3594|Wireless|MediaTek|Bluetooth'
+cat /sys/class/dmi/id/sys_vendor /sys/class/dmi/id/product_name
+```
 
-# Reboot
+### Laptops
+
+AzureWave MT7902 modules are common in **Acer** notebooks:
+
+| Model | Note |
+|-------|------|
+| **Aspire A315-59** | Verified in this project (Wi‑Fi + Bluetooth) |
+| Aspire A314-23P | Frequently reported on [linux-hardware.org](https://linux-hardware.org/?id=pci%3A14c3-7902-1a3b-5524) |
+| Aspire A314-35 | Community |
+| Aspire A315-24P | Community |
+| Aspire A114-33 | Community |
+| Extensa 215-23 | Community |
+| Extensa 215-55 | Community |
+
+Any system with PCI ID **`14c3:7902`** is a candidate. The laptop list grows with user reports.
+
+### Kernel compatibility
+
+| Component | Source | Kernels |
+|-----------|--------|---------|
+| Wi‑Fi `mt7902e` | `gen4-mt7902/` ← `backport` branch | 6.6–6.19 |
+| Bluetooth `btusb_mt7902` | `btusb_mt7902/` ← `bluetooth_backport` | 6.6–6.19 |
+| Mainline | expected in Linux **7.1+** | — |
+
+Upstream driver repo: [hmtheboy154/mt7902](https://github.com/hmtheboy154/mt7902).
+
+## Quick Start
+
+```bash
+sudo apt update
+sudo apt install -y build-essential linux-headers-$(uname -r) git dkms
+
+# Wi‑Fi + Bluetooth + systemd in one step
+sudo ./mt7902.sh install-all
+
 sudo reboot
-
-# Check WiFi
-lsmod | grep mt7902
-nmcli dev status | grep wlan0
 ```
 
-## 📡 Device and Driver
+Or stepwise: `sudo ./mt7902.sh install` then `sudo ./mt7902.sh bluetooth`.
 
-### Specifications
-- **Device:** MediaTek MT7902 WiFi adapter
-- **PCI ID:** 14c3:7902
-- **Driver:** mt7902 (gen4-mt7902 community driver)
-- **Interface:** wlan0
+After reboot:
 
-### Driver Check
 ```bash
-# Check if module is loaded
-lsmod | grep mt7902
-
-# Check PCI device
-lspci | grep -i "mediatek\|7902"
-
-# Check interface
-ip addr show wlan0
-
-# Check WiFi status
-nmcli dev status | grep wlan0
+lsmod | grep -E 'mt7902e|btusb_mt7902'
+nmcli device status
+bluetoothctl show
+./mt7902.sh verify
 ```
 
-### Problems and Solutions
+### Verified on
 
-#### 1. Driver not loading
+| Item | Value |
+|------|-------|
+| Laptop | Acer Aspire A315-59 |
+| Wi‑Fi | PCI `14c3:7902` / AzureWave `1a3b:5524` → `mt7902e`, iface `wlp42s0` |
+| Bluetooth | USB `13d3:3594` → `btusb_mt7902`, MediaTek HCI 5.2, Powered |
+| Kernel | Linux 6.17 (Ubuntu 24.04 HWE) |
+| OS | Ubuntu 24.04 |
+## Wi‑Fi
+
+### Specs
+
+- **Device:** MediaTek MT7902
+- **PCI ID:** `14c3:7902`
+- **Driver:** `mt7902e`
+- **Firmware:** `mediatek/WIFI_MT7902_patch_mcu_1_1_hdr.bin`, `mediatek/WIFI_RAM_CODE_MT7902_1.bin`
+- **Interface:** usually `wlan0`, may be renamed to `wlpXsY` (e.g. `wlp42s0`)
+
+### Checks
+
 ```bash
-# Reload driver
-sudo modprobe -r mt7902
-sudo modprobe mt7902
+lsmod | grep mt7902e
+lspci -nnk | grep -A3 7902
+ip -br link
+nmcli device status
+```
 
-# Restart NetworkManager
+### Common issues
+
+**Driver not loading**
+
+```bash
+sudo modprobe -r mt7902e
+sudo modprobe mt7902e
 sudo systemctl restart NetworkManager
 ```
 
-#### 2. Low WiFi speed
-```bash
-# Set correct region
-sudo iw reg set US
+**No interface / no networks**
 
-# Check supported frequencies
-iw dev wlan0 info | grep freq
+```bash
+journalctl -b | grep -i mt7902e | tail -30
+ls /lib/firmware/mediatek/WIFI_MT7902*
 ```
 
-## ⚙️ System Optimizations
+On Windows dual-boot, disable **Fast Startup** — otherwise the card may fail to initialize under Linux.
 
-### Problem: System hangs on shutdown
+## Bluetooth
 
-System was hanging during shutdown due to:
-- Infinite Docker timeouts (`TimeoutStopUSec=infinity`)
-- Issues with mt7902 WiFi driver unloading
-- Long NetworkManager timeouts
+### Symptoms before the fix
 
-### Solution: Timeout optimization
+- `bluetoothctl show` → *No default controller*
+- `hciconfig`: address `00:00:00:00:00:00`, state `DOWN`
+- Logs: `Bluetooth: hciX: Opcode 0x0c03 failed: -110`
 
-#### System timeouts (30 seconds)
+### Install
+
 ```bash
-# /etc/systemd/system.conf.d/99-timeouts.conf
+sudo ./mt7902.sh bluetooth
+# or
+sudo make bluetooth
+```
+
+What it does:
+
+1. Builds and installs `btusb_mt7902`
+2. Installs firmware `mediatek/BT_RAM_CODE_MT7902_1_1_hdr.bin`
+3. Blacklists stock modules in `/etc/modprobe.d/blacklist_btusb.conf`:
+   ```
+   blacklist btusb
+   blacklist btmtk
+   ```
+4. Enables autoload of `btusb_mt7902`
+5. Optionally registers DKMS
+
+### Verify
+
+```bash
+lsmod | grep btusb_mt7902
+hciconfig -a
+bluetoothctl show
+# Expect: Manufacturer MediaTek, Powered yes, valid BD Address
+```
+
+### Important
+
+- In-tree `btusb` / `btmtk` **conflict** with `btusb_mt7902` — unload and blacklist them.
+- Bluetooth on a Realtek USB dongle (via `btusb`) will **stop working** after the blacklist.
+- Realtek USB Wi‑Fi (`rtw88`, etc.) is unaffected.
+
+### Reload Bluetooth driver
+
+```bash
+sudo systemctl stop bluetooth
+sudo modprobe -r btusb_mt7902
+sudo modprobe btusb_mt7902
+sudo systemctl start bluetooth
+```
+
+## System Optimizations
+
+### Problem: hang on shutdown
+
+Common causes:
+
+- Infinite Docker stop timeouts (`TimeoutStopUSec=infinity`)
+- Wi‑Fi driver unload stalls
+- Long NetworkManager stop timeouts
+
+### Fix (via `./mt7902.sh system` or `install`)
+
+**`/etc/systemd/system.conf.d/99-timeouts.conf`**
+
+```
 DefaultTimeoutStartSec=30s
 DefaultTimeoutStopSec=30s
 DefaultTimeoutAbortSec=10s
 ShutdownWatchdogSec=1min
 ```
 
-#### Docker optimization (30 seconds)
-```bash
-# /etc/systemd/system/docker.service.d/override.conf
-[Service]
-TimeoutStartSec=60s
-TimeoutStopSec=30s
-KillMode=mixed
-KillSignal=SIGINT
-SendSIGKILL=yes
-```
+**Docker** — `TimeoutStopSec=30s` override.
 
-#### NetworkManager optimization (15 seconds)
-```bash
-# /etc/systemd/system/NetworkManager.service.d/override.conf
-[Service]
-TimeoutStartSec=30s
-TimeoutStopSec=15s
-KillMode=mixed
-SendSIGKILL=yes
-```
+**NetworkManager** — `TimeoutStopSec=15s` override.
 
-### Services for proper shutdown
+**Driver unload service:** `mt7902-driver-shutdown.service` (`modprobe -r mt7902e` before shutdown).
 
-#### Docker shutdown service
-```bash
-# /etc/systemd/system/docker-shutdown.service
-[Unit]
-Description=Stop Docker containers before shutdown
-DefaultDependencies=no
-Before=shutdown.target reboot.target halt.target
+## Commands
 
-[Service]
-Type=oneshot
-ExecStart=/usr/bin/docker stop $(docker ps -q)
-ExecStart=/usr/bin/docker kill $(docker ps -q)
-TimeoutStartSec=30s
-RemainAfterExit=yes
-
-[Install]
-WantedBy=halt.target reboot.target shutdown.target
-```
-
-#### WiFi driver service
-```bash
-# /etc/systemd/system/mt7902-driver-shutdown.service
-[Unit]
-Description=Unload mt7902 driver before shutdown
-DefaultDependencies=no
-Before=shutdown.target reboot.target halt.target
-After=NetworkManager.service
-
-[Service]
-Type=oneshot
-ExecStart=/sbin/modprobe -r mt7902
-TimeoutStartSec=10s
-RemainAfterExit=yes
-
-[Install]
-WantedBy=halt.target reboot.target shutdown.target
-```
-
-## 🛠️ Installation and Usage
-
-### Universal Script
-
-The project now uses a single universal script `mt7902.sh` for all operations:
+### `mt7902.sh`
 
 ```bash
-# Full installation (driver + system settings)
-sudo ./mt7902.sh install
-
-# Driver only
-sudo ./mt7902.sh driver
-
-# System settings only
-sudo ./mt7902.sh system
-
-# Verify installation
+sudo ./mt7902.sh install-all  # Wi‑Fi + Bluetooth + systemd
+sudo ./mt7902.sh install      # Wi‑Fi + system
+sudo ./mt7902.sh driver       # Wi‑Fi only
+sudo ./mt7902.sh bluetooth    # Bluetooth only
+sudo ./mt7902.sh system       # systemd only
 ./mt7902.sh verify
-
-# Remove installation
-sudo ./mt7902.sh remove
-
-# Prepare patches for kernel submission
-./mt7902.sh patch
-
-# Check patch format
-./mt7902.sh patch-check
-
-# System status
 ./mt7902.sh status
-
-# Full diagnostics
 ./mt7902.sh diagnose
-
-# Help
+sudo ./mt7902.sh remove
+./mt7902.sh patch             # kernel patch prep (needs kernel tree)
 ./mt7902.sh help
 ```
 
-### Makefile Commands
+### Makefile
 
 ```bash
-# Quick installation
 make quick-install
-
-# Full installation
 sudo make install
-
-# Prepare patches
-make patch
-
-# Check patches
-make patch-check
-
-# Check status
+sudo make bluetooth
 make check-status
+make diagnose
+sudo make uninstall
+make help
+```
 
-# Test
-make test
+## Diagnostics
 
-# Diagnose
+```bash
+./mt7902.sh diagnose
 make diagnose
 
-# Clean
-make clean
-
-# Remove
-sudo make uninstall
-
-# Help
-make help
+lsmod | grep -E 'mt7902e|btusb_mt7902'
+lspci -nnk | grep -A3 -i mediatek
+lsusb | grep -i 13d3
+ip -br link
+nmcli device status
+bluetoothctl show
+journalctl -b | grep -iE 'mt7902|btusb_mt7902|mediatek' | tail -40
 ```
 
-## 🔍 Diagnostics
+## Requirements
 
-### System Check
+- OS: Ubuntu/Debian (recommended), Fedora, etc.
+- Kernel: **6.6+** for the current backport
+- Packages: `build-essential`, `linux-headers-$(uname -r)`, `git`, `dkms`
+- Secure Boot: disabled or modules signed (MOK)
+- Device: MT7902 (`14c3:7902`)
+
+## Results
+
+| Item | Before | After |
+|------|--------|-------|
+| MT7902 Wi‑Fi | Broken | `mt7902e`, interface UP |
+| MT7902 Bluetooth | Timeout / zero address | MediaTek HCI UP |
+| Shutdown | Hang | 15–30 s |
+| Autoload | Missing | `modules-load.d` + DKMS |
+
+## Maintenance
+
 ```bash
-# Driver status
-lsmod | grep mt7902
+# Rebuild after kernel update if DKMS did not run
+cd gen4-mt7902 && make clean && sudo make install && sudo make install_fw
+cd ../btusb_mt7902 && make clean && sudo make install && sudo make install_fw
 
-# Device
-lspci | grep -i "mediatek\|7902"
-
-# Interface
-ip addr show wlan0
-
-# Services
-systemctl status mt7902-driver-shutdown.service
-systemctl status docker-shutdown.service
-
-# Timeouts
-systemctl show docker --property=TimeoutStopUSec
-systemctl show NetworkManager --property=TimeoutStopUSec
+# Or via DKMS
+sudo dkms install -m mt7902e -v git --force
+sudo dkms install -m btusb_mt7902 -v git --force
 ```
 
-### Script Diagnostics
-```bash
-# Check installation
-./mt7902.sh verify
-
-# Full diagnostics
-./mt7902.sh diagnose
-
-# Check status
-./mt7902.sh status
-
-# Check patches
-./mt7902.sh patch-check
-```
-
-### Troubleshooting
-
-#### WiFi not working
-```bash
-# 1. Check driver
-lsmod | grep mt7902
-
-# 2. Reload driver
-sudo modprobe -r mt7902 && sudo modprobe mt7902
-
-# 3. Restart NetworkManager
-sudo systemctl restart NetworkManager
-
-# 4. Check device
-lspci | grep -i "mediatek\|7902"
-```
-
-#### System hangs on shutdown
-```bash
-# 1. Check services
-systemctl status mt7902-driver-shutdown.service
-systemctl status docker-shutdown.service
-
-# 2. Check timeouts
-systemctl show --property=DefaultTimeoutStopUSec
-
-# 3. Check configuration
-cat /etc/systemd/system.conf.d/99-timeouts.conf
-```
-
-#### Docker containers stop slowly
-```bash
-# 1. Check Docker timeouts
-systemctl show docker --property=TimeoutStopUSec
-
-# 2. Check service
-systemctl status docker-shutdown.service
-
-# 3. Manual stop
-sudo docker stop $(docker ps -q)
-```
-
-## 📋 Requirements
-
-### System
-- **OS:** Ubuntu/Debian (recommended), CentOS/RHEL, Fedora
-- **Kernel:** Linux 5.4+ (mt7902 support)
-- **Packages:** build-essential, linux-headers, git, dkms
-
-### Software
-- **systemd** for service management
-- **NetworkManager** for network management
-- **Docker** optional, for container optimization
-
-## 🎯 Results
-
-### After installation
-- **📡 WiFi works** - MediaTek MT7902 fully functional
-- **⚡ Fast shutdown** - 15-30 seconds instead of hanging
-- **🐳 Docker stops quickly** - 30 seconds timeout
-- **🌐 Network stable** - NetworkManager optimized
-- **🔄 Autoload** - driver loads on system start
-
-### Comparison
-| Parameter | Before | After |
-|-----------|---------|--------|
-| WiFi | ❌ Not working | ✅ Fully functional |
-| Shutdown | ❌ Hanging | ✅ 15-30 seconds |
-| Docker | ❌ Infinite timeout | ✅ 30 seconds |
-| NetworkManager | ❌ Long stop | ✅ 15 seconds |
-| Autoload | ❌ Missing | ✅ Configured |
-
-## 🔄 Maintenance
-
-### Driver Update
-```bash
-# Rebuild and install
-make clean
-make gen4-driver
-sudo make install-gen4
-```
-
-### Reset Settings
-```bash
-# Remove and reinstall
-sudo ./mt7902.sh remove
-sudo ./mt7902.sh install
-```
-
-### Version Check
-```bash
-# Kernel version
-uname -r
-
-# Driver version
-modinfo mt7902 | grep version
-
-# Project version
-git log -1 --oneline
-```
-
-## 📞 Support
-
-### Quick Help
-```bash
-# Diagnose problems
-./mt7902.sh diagnose
-
-# Check status
-./mt7902.sh status
-
-# Help
-./mt7902.sh help
-make help
-```
-
-### Bug Reports
-- **GitHub Issues:** Report a problem
-- **Diagnostics:** Use `make diagnose` to collect information
-
-### Useful Commands
-```bash
-# Check WiFi
-nmcli dev wifi list
-
-# Error logs
-journalctl -b -p err | tail -10
-
-# Driver logs
-journalctl -b | grep -i "mt7902\|mediatek"
-
-# Service status
-systemctl list-units --type=service --state=failed
-```
-
-## 📄 Project Structure
+## Project layout
 
 ```
 FIX-MediaTek-MT7902-MT7921-MT7961-WIFI/
-├── 🚀 mt7902.sh                    # Universal script (install + patches)
-├── 🔨 Makefile                       # Main commands
-├── 📦 gen4-mt7902/                   # Community driver
-├── 🩹 patches/                       # Kernel patches
-├── � GUIDE_EN.md                    # This file (English)
-├── 📚 GUIDE_RU.md                    # Russian guide
-├── 📋 README.md                      # Short description
-└── 📄 LICENSE                        # License
+├── mt7902.sh           # Wi‑Fi / BT / system / patches
+├── Makefile
+├── gen4-mt7902/        # Wi‑Fi (mt7902e)
+├── btusb_mt7902/       # Bluetooth (btusb_mt7902)
+├── patches/            # PCI ID patches for upstream
+├── GUIDE_EN.md
+├── GUIDE_RU.md
+├── README.md
+└── LICENSE
 ```
 
-## 🎉 Ready to Use!
+## Ready
 
-Run `sudo ./mt7902.sh install` for complete driver and system optimization installation.
-
-**Key commands:**
-- `sudo ./mt7902.sh install` - full installation
-- `./mt7902.sh patch` - prepare patches
-- `./mt7902.sh diagnose` - problem diagnostics
-- `./mt7902.sh help` - help
+```bash
+sudo ./mt7902.sh install-all
+sudo reboot
+```

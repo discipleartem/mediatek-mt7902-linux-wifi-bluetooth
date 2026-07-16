@@ -1,180 +1,92 @@
-# MT7921 WiFi Patch Metadata
+# Патчи и драйверы MediaTek MT7902 / MT7921 / MT7961
 
-## 📋 Информация о патче
+## Назначение
 
-**Название:** MT7921 PCI ID 0x7902 Support Patch  
-**Версия:** 1.0.0  
-**Дата:** 2026-02-12  
-**Автор:** Community Patch  
-**Лицензия:** MIT
+Набор исправлений для Linux, связанных с чипсетами MediaTek семейства mt76:
 
-## 🎯 Назначение
+| Цель | Что чинит |
+|------|-----------|
+| **MT7902 Wi‑Fi** | PCI ID `14c3:7902` (AzureWave `1a3b:5524`) — основной out-of-tree драйвер `mt7902e` |
+| **MT7902 Bluetooth** | USB combo (часто `13d3:3594`) — драйвер `btusb_mt7902` |
+| **MT7921 / MT7961** | Исторические патчи добавления ID в in-tree `mt7921`; на новых ядрах эти чипы обычно уже работают |
 
-Добавление поддержки WiFi адаптера MediaTek MT7921 с PCI ID 0x7902 в драйвер mt7921 ядра Linux.
+## Файлы в `patches/`
 
-## 📊 Техническая информация
+| Файл | Описание |
+|------|----------|
+| `0001-net-wireless-mediatek-mt76-mt7921-Add-support-for-PCI-ID-7902.patch` | Патч для отправки в ядро: добавить PCI ID `0x7902` в `mt7921` |
+| `mt7921_add_7902.patch` | Упрощённый вариант того же изменения |
+| `mt7921_metadata.patch` | Метаданные |
+| `README.md` | Этот файл |
 
-### Устройство
-- **Производитель:** MediaTek
-- **Модель:** MT7921
-- **PCI ID:** 14c3:7902
-- **Тип:** WiFi 6 (802.11ax)
-- **Частоты:** 2.4GHz + 5GHz
-- **Скорость:** до 1.2Gbps
+> Для **практической** установки на ядрах 6.6–6.19 используйте каталоги `gen4-mt7902/` (Wi‑Fi) и `btusb_mt7902/` (Bluetooth), а не только эти diff‑патчи. Патчи в `patches/` полезны для upstream / сборки своего ядра.
 
-### Совместимость
-- **Минимальная версия ядра:** 5.8
-- **Рекомендуемая версия ядра:** 5.15+ / 6.x
-- **Поддерживаемые ОС:** Ubuntu 20.04+, Debian 11+, Fedora 34+
+## Bluetooth fix (добавлено в проекте)
 
-### Драйвер
-- **Основной драйвер:** mt7921
-- **Зависимости:** cfg80211, mac80211, mt76
-- **Firmware:** mt7921_wa.bin, mt7921_wm.bin
+### Проблема
 
-## 🔧 Изменения в коде
+Штатные `btusb` + `btmtk` не загружают прошивку MT7902:
 
-### Файл: drivers/net/wireless/mediatek/mt76/mt7921/pci.c
+- HCI с адресом `00:00:00:00:00:00`
+- `Opcode 0x0c03 failed: -110`
+
+### Решение
+
+Out-of-tree модуль из [hmtheboy154/mt7902](https://github.com/hmtheboy154/mt7902) ветка **`bluetooth_backport`**:
+
+```bash
+# Клонирование (если ещё нет)
+git clone -b bluetooth_backport https://github.com/hmtheboy154/mt7902.git btusb_mt7902
+
+sudo ./mt7902.sh bluetooth
+# или: cd btusb_mt7902 && make && sudo make install && sudo make install_fw
+```
+
+Прошивка: `mediatek/BT_RAM_CODE_MT7902_1_1_hdr.bin`
+
+Обязательный blacklist (иначе конфликт с новым модулем):
+
+```
+# /etc/modprobe.d/blacklist_btusb.conf
+blacklist btusb
+blacklist btmtk
+```
+
+Upstream-патчи MediaTek для Bluetooth:  
+https://lore.kernel.org/all/20260219231624.8226-1-sean.wang@kernel.org/
+
+## Wi‑Fi fix
+
+Практическая установка — модуль **`mt7902e`** из ветки **`backport`**:
+
+```bash
+git clone -b backport https://github.com/hmtheboy154/mt7902.git gen4-mt7902
+sudo ./mt7902.sh install
+```
+
+Прошивка: `WIFI_MT7902_patch_mcu_1_1_hdr.bin`, `WIFI_RAM_CODE_MT7902_1.bin`
+
+Upstream Wi‑Fi:  
+https://lore.kernel.org/all/20260219004007.19733-1-sean.wang@kernel.org/
+
+## Железо (кратко)
+
+- **Карта:** MediaTek MT7902 Filogic 310, PCI `14c3:7902`, AzureWave `1a3b:5524`
+- **Ноутбуки:** Acer Aspire A315-59 (проверено), A314-23P, A314-35, A315-24P, A114-33; Extensa 215-23 / 215-55 и др. с тем же PCI ID
+
+Подробнее: корневой [README.md](../README.md), [GUIDE_RU.md](../GUIDE_RU.md), [GUIDE_EN.md](../GUIDE_EN.md).
+
+## Исторический патч mt7921 (PCI ID 7902)
+
+Ранний подход — добавить ID в in-tree `mt7921`. Для реального MT7902 предпочтителен отдельный драйвер `mt7902e` (своя прошивка и инициализация).
+
+Пример изменения:
 
 ```c
-// Добавлена строка в mt7921_pci_table:
 { PCI_DEVICE(PCI_VENDOR_ID_MEDIATEK, 0x7902),
     .driver_data = (kernel_ulong_t)MT7921_FIRMWARE_WM },
 ```
 
-### Тип патча
-- **Категория:** Device ID Addition
-- **Влияние:** Non-breaking change
-- **Обратная совместимость:** Полная
+## Лицензия патчей
 
-## 📈 История версий
-
-### v1.0.0 (2026-02-12)
-- ✅ Первоначальный релиз
-- ✅ Добавление PCI ID 0x7902
-- ✅ Тестирование на ядре 5.15+
-- ✅ Документация и скрипты
-
-## 🧪 Тестирование
-
-### Протестированные системы
-- ✅ Ubuntu 22.04.3 (ядро 5.15.0-88-generic)
-- ✅ Ubuntu 20.04.6 (ядро 5.4.0-166-generic) - требует обновления
-- ✅ Debian 11 (ядро 5.10.0-23-amd64)
-- ✅ Fedora 38 (ядро 6.2.9-300.fc38)
-
-### Результаты тестов
-- ✅ Определение устройства: 100%
-- ✅ Загрузка модуля: 100%
-- ✅ Создание интерфейса: 100%
-- ✅ Сканирование сетей: 100%
-- ✅ Подключение к сети: 100%
-- ✅ Скорость передачи: ожидаемая
-
-## 🐛 Известные проблемы
-
-### Проблема 1: Отсутствие firmware
-**Симптом:** Модуль загружается, но интерфейс не создается  
-**Решение:** `sudo apt install linux-firmware`
-
-### Проблема 2: Старое ядро
-**Симптом:** Ошибка сборки модуля  
-**Решение:** Обновить ядро до версии 5.8+
-
-### Проблема 3: Отсутствуют заголовки
-**Симптом:** Файлы исходников не найдены  
-**Решение:** `sudo apt install linux-headers-$(uname -r)`
-
-## 📦 Пакеты и зависимости
-
-### Обязательные пакеты
-```bash
-# Ubuntu/Debian
-sudo apt install -y build-essential linux-headers-$(uname -r) linux-firmware
-
-# Fedora
-sudo dnf install -y kernel-devel kernel-headers linux-firmware
-
-# Arch Linux
-sudo pacman -S linux-headers linux-firmware
-```
-
-### Опциональные пакеты
-```bash
-# Для тестирования
-sudo apt install -y wireless-tools iw iperf3
-
-# Для управления сетью
-sudo apt install -y network-manager wpasupplicant
-```
-
-## 🔒 Безопасность
-
-### Анализ безопасности
-- ✅ Нет изменений в привилегированном коде
-- ✅ Нет сетевых протоколов
-- ✅ Нет обработки пользовательских данных
-- ✅ Только добавление ID устройства
-
-### Риски
-- **Низкий риск:** Патч только добавляет ID устройства
-- **Влияние:** Минимальное
-- **Откат:** Легкий (удаление строки из pci.c)
-
-## 📚 Ссылки
-
-### Официальная документация
-- [Linux Wireless](https://wireless.wiki.kernel.org/)
-- [MediaTek MT7921](https://www.mediatek.com/products/broadband-wifi/mt7921)
-- [Kernel Development](https://www.kernel.org/doc/)
-
-### Сообщество
-- [GitHub Issue](https://github.com/torvalds/linux/issues)
-- [Linux Kernel Mailing List](https://lkml.org/)
-- [Ask Ubuntu](https://askubuntu.com/)
-
-## 📞 Поддержка
-
-### Сообщить о проблеме
-При создании отчета включите:
-1. Вывод `./scripts/check_kernel.sh`
-2. Вывод `./scripts/test_wifi.sh`
-3. Версию дистрибутива
-4. Версию ядра
-5. Вывод `lspci -nn | grep -i mediatek`
-
-### Контакты
-- **GitHub:** [создать Issue]
-- **Email:** [не указан]
-- **Форум:** [не указан]
-
-## 📜 Лицензия
-
-```
-MIT License
-
-Copyright (c) 2026 Community Patch
-
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
-
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
-```
-
----
-
-**Метаданные обновлены:** 2026-02-12  
-**Следующая проверка:** 2026-08-12
+MIT для метаданных community patch; код драйверов в `gen4-mt7902/` и `btusb_mt7902/` — GPL (как в upstream mt76 / btusb).
