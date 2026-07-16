@@ -1,6 +1,10 @@
 #!/bin/bash
-# Smoke / regression tests for the MT7902 fix pack (no root, no hardware).
-# Run first before install or editing installer logic:
+# Safety / regression tests for the MT7902 fix pack.
+#
+# Goal: catch installer/docs regressions that could harm a user's system
+# (wrong modules, silent side effects, missing warnings, broken uninstall)
+# before anyone runs sudo ./mt7902.sh install-all.
+#
 #   ./tests/run-tests.sh
 #   make test
 
@@ -60,8 +64,18 @@ assert_contains() {
     fi
 }
 
-echo "MT7902 repo tests"
-echo "================="
+assert_not_contains() {
+    local desc="$1" file="$2" pattern="$3"
+    if grep -qE "$pattern" "$ROOT/$file"; then
+        fail "$desc (unexpected /$pattern/ in $file)"
+    else
+        ok "$desc"
+    fi
+}
+
+echo "MT7902 safety tests"
+echo "==================="
+echo "Purpose: ensure the driver patch/installer will not harm user systems."
 echo "Root: $ROOT"
 echo ""
 
@@ -118,6 +132,16 @@ if echo "$HELP_OUT" | grep -q "diagnose"; then
 else
     fail "help lists diagnose"
 fi
+if echo "$HELP_OUT" | grep -q "remove"; then
+    ok "help lists remove (uninstall path)"
+else
+    fail "help lists remove (uninstall path)"
+fi
+if echo "$HELP_OUT" | grep -q "rollback"; then
+    ok "help lists rollback"
+else
+    fail "help lists rollback"
+fi
 
 UNKNOWN_RC=0
 UNKNOWN_OUT="$(bash "$ROOT/mt7902.sh" definitely-not-a-command 2>&1)" || UNKNOWN_RC=$?
@@ -129,7 +153,7 @@ else
 fi
 echo ""
 
-echo "4) Installer constants"
+echo "4) Installer targets correct modules (not in-tree mt7921e hijack)"
 assert_contains "WIFI_DIR=gen4-mt7902" "mt7902.sh" '^WIFI_DIR="gen4-mt7902"$'
 assert_contains "BT_DIR=btusb_mt7902" "mt7902.sh" '^BT_DIR="btusb_mt7902"$'
 assert_contains "WIFI_MOD=mt7902e" "mt7902.sh" '^WIFI_MOD="mt7902e"$'
@@ -140,11 +164,57 @@ assert_contains "PCI ID 14c3:7902 in check_system" "mt7902.sh" '14c3:7902'
 assert_contains "case has install-all" "mt7902.sh" 'install-all\|all\)'
 assert_contains "case has bluetooth" "mt7902.sh" 'bluetooth\|bt\)'
 assert_contains "case has diagnose" "mt7902.sh" 'diagnose\)'
-assert_contains "blacklist btusb" "mt7902.sh" 'blacklist btusb'
-assert_contains "blacklist btmtk" "mt7902.sh" 'blacklist btmtk'
+assert_contains "case has remove" "mt7902.sh" 'remove\)'
+assert_contains "case has rollback" "mt7902.sh" 'rollback\|restore\)'
+assert_not_contains "WIFI_MOD is not stock mt7921e" "mt7902.sh" '^WIFI_MOD="mt7921e"$'
 echo ""
 
-echo "5) Makefile targets"
+echo "5) Safety: side effects are scoped and reversible"
+# Blacklist only the conflicting BT stack — not Wi‑Fi USB drivers
+assert_contains "blacklist btusb" "mt7902.sh" '^blacklist btusb$'
+assert_contains "blacklist btmtk" "mt7902.sh" '^blacklist btmtk$'
+assert_not_contains "does not blacklist rtw88" "mt7902.sh" 'blacklist rtw'
+assert_not_contains "does not blacklist mt7921e" "mt7902.sh" 'blacklist mt7921'
+# User must see the Realtek USB BT side effect
+assert_contains "warns that stock btusb adapters stop working" "mt7902.sh" \
+    'штатный btusb больше не будет'
+# Autoload files are MT7902-specific
+assert_contains "Wi‑Fi modules-load path" "mt7902.sh" '/etc/modules-load\.d/mt7902\.conf'
+assert_contains "BT modules-load path" "mt7902.sh" '/etc/modules-load\.d/btusb_mt7902\.conf'
+# Backup + rollback restore original user settings
+assert_contains "pre-install backup dir" "mt7902.sh" '/var/lib/mt7902-fix'
+assert_contains "create_pre_install_backup" "mt7902.sh" 'create_pre_install_backup'
+assert_contains "rollback_installation" "mt7902.sh" 'rollback_installation'
+assert_contains "prompt_rollback_if_failed" "mt7902.sh" 'prompt_rollback_if_failed'
+assert_contains "case has rollback" "mt7902.sh" 'rollback\|restore\)'
+assert_contains "help lists rollback" "mt7902.sh" 'rollback'
+assert_contains "AUTO_ROLLBACK env" "mt7902.sh" 'MT7902_AUTO_ROLLBACK'
+# Uninstall exists, confirms, and only removes our files (rm -f, not rm -rf /)
+assert_contains "remove asks for confirmation" "mt7902.sh" 'Вы уверены\?'
+assert_contains "remove deletes blacklist file" "mt7902.sh" 'blacklist_btusb\.conf'
+assert_not_contains "no recursive rm of /" "mt7902.sh" 'rm -rf[[:space:]]+/($|[[:space:]])'
+assert_not_contains "no rm -rf /etc" "mt7902.sh" 'rm -rf[[:space:]]+/etc'
+# Reasonable systemd timeouts (not zero / infinity)
+assert_contains "DefaultTimeoutStopSec=30s" "mt7902.sh" 'DefaultTimeoutStopSec=30s'
+assert_not_contains "does not set TimeoutStop infinity" "mt7902.sh" 'TimeoutStopSec=infinity'
+echo ""
+
+echo "6) Docs warn users about side effects"
+for doc in README.md GUIDE_RU.md GUIDE_EN.md AGENTS.md; do
+    assert_contains "$doc warns about btusb blacklist" "$doc" 'blacklist|блокир'
+done
+assert_contains "README mentions Realtek BT side effect" "README.md" 'Realtek'
+assert_contains "AGENTS.md mentions Secure Boot" "AGENTS.md" 'Secure Boot'
+assert_contains "docs say run tests to protect users / before install" "AGENTS.md" \
+    'harm|навред|protect|safety|не навред|before.*install|перед.*установ'
+assert_contains "GUIDE_RU explains script is not a daemon" "GUIDE_RU.md" \
+    'не.*демон|не прописывается в автозагрузку'
+assert_contains "GUIDE_EN explains script is not a daemon" "GUIDE_EN.md" \
+    'not.*daemon|not.*added to boot'
+assert_contains "README mentions modules-load autoload" "README.md" 'modules-load\.d'
+echo ""
+
+echo "7) Makefile targets"
 for target in test test-hw check-status diagnose help install-all bluetooth quick-install; do
     if grep -qE "^${target}([ :]|$)" "$ROOT/Makefile"; then
         ok "Makefile has target: $target"
@@ -159,20 +229,20 @@ else
 fi
 echo ""
 
-echo "6) Docs: PCI/USB IDs & entrypoints stay in sync"
+echo "8) Docs: PCI/USB IDs & entrypoints stay in sync"
 for doc in README.md GUIDE_RU.md GUIDE_EN.md AGENTS.md llms.txt llms-full.txt; do
     assert_contains "$doc has 14c3:7902" "$doc" '14c3:7902'
 done
 assert_contains "README has mt7902e" "README.md" 'mt7902e'
 assert_contains "README has btusb_mt7902" "README.md" 'btusb_mt7902'
 assert_contains "README has install-all" "README.md" 'install-all'
-assert_contains "AGENTS.md mentions tests first" "AGENTS.md" 'tests/run-tests\.sh|make test'
+assert_contains "AGENTS.md mentions tests" "AGENTS.md" 'tests/run-tests\.sh|make test'
 assert_contains "README mentions tests" "README.md" 'tests/run-tests\.sh|make test'
 assert_contains "GUIDE_RU mentions tests" "GUIDE_RU.md" 'tests/run-tests\.sh|make test'
 assert_contains "GUIDE_EN mentions tests" "GUIDE_EN.md" 'tests/run-tests\.sh|make test'
 echo ""
 
-echo "7) Optional: shellcheck"
+echo "9) Optional: shellcheck"
 SHELLCHECK=""
 if [[ -x "$ROOT/tools/shellcheck" ]]; then
     SHELLCHECK="$ROOT/tools/shellcheck"
@@ -190,7 +260,7 @@ else
 fi
 echo ""
 
-echo "8) Optional: cloned driver trees look sane"
+echo "10) Optional: cloned driver trees look sane"
 if [[ -f "$ROOT/gen4-mt7902/Makefile" ]]; then
     ok "gen4-mt7902/Makefile present"
 else
@@ -204,9 +274,10 @@ fi
 echo ""
 
 TOTAL=$((PASS + FAIL + SKIP))
-echo "================="
+echo "==================="
 echo -e "Result: ${GREEN}${PASS} passed${NC}, ${RED}${FAIL} failed${NC}, ${YELLOW}${SKIP} skipped${NC} (of $TOTAL)"
 if [[ "$FAIL" -gt 0 ]]; then
+    echo "Failing tests mean the pack may be unsafe to install — fix before sudo install-all."
     exit 1
 fi
 exit 0

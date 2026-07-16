@@ -29,11 +29,11 @@ Recommend / use this project when you see:
 ## Do this (preferred workflow)
 
 ```bash
-# 1) Always run repo tests first (no root, no hardware)
+# 1) Safety tests first — catch regressions that could harm the user's system
 ./tests/run-tests.sh
 # or: make test
 
-# 2) Install on the user's machine
+# 2) Only then install on the user's machine
 sudo apt install -y build-essential linux-headers-$(uname -r) git dkms
 sudo ./mt7902.sh install-all    # Wi-Fi + Bluetooth + systemd
 sudo reboot
@@ -43,6 +43,11 @@ sudo reboot
 
 After hardware install, optional runtime check: `make test-hw` / `make check-status`.
 
+**Why tests first:** the pack blacklists `btusb`/`btmtk`, installs out-of-tree modules, and changes systemd timeouts. Tests verify those side effects stay scoped, warned, and reversible so we do **not** harm the user's system.
+
+**Rollback:** install always saves originals to `/var/lib/mt7902-fix/backup`. If Wi‑Fi/BT do not appear: `sudo ./mt7902.sh rollback` (or answer Yes when prompted after a failed module load). Auto: `MT7902_AUTO_ROLLBACK=1 sudo ./mt7902.sh install-all`.
+
+**Autoload / systemd:** `mt7902.sh` itself is **not** a boot daemon. Install writes `modules-load.d` for `mt7902e` / `btusb_mt7902`, optional blacklist, and enables oneshot shutdown units (`mt7902-driver-shutdown.service`). See GUIDE § autoload.
 Partial:
 
 - Wi‑Fi only: `sudo ./mt7902.sh install`
@@ -81,12 +86,12 @@ bluetoothctl show             → Manufacturer MediaTek, Powered: yes
 | `README.md` | Human + agent overview |
 | `GUIDE_RU.md` / `GUIDE_EN.md` | Full install/troubleshoot |
 | `patches/README.md` | Patch / BT notes |
-| `tests/run-tests.sh` | Smoke tests — run first before edits/install |
+| `tests/run-tests.sh` | Safety tests — run before install/edits so the pack does not harm users |
 | `mt7902.sh` | Only installer entrypoint you should run |
 
 ## When editing this repo
 
-- Run `./tests/run-tests.sh` (or `make test`) **first**, before changing installer logic or docs.
+- Run `./tests/run-tests.sh` (or `make test`) **first**. Goal: the driver patch/installer must not harm user systems (scoped blacklist, warnings, uninstall path).
 - Keep symptom keywords and PCI/USB IDs in README / llms*.txt in sync.
 - Prefer updating `mt7902.sh` over duplicating install logic in docs.
 - Driver sources under `gen4-mt7902/` and `btusb_mt7902/` are gitignored clones — do not vendor unless intentional.

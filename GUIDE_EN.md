@@ -53,9 +53,9 @@ Any system with PCI ID **`14c3:7902`** is a candidate. The laptop list grows wit
 
 Upstream driver repo: [hmtheboy154/mt7902](https://github.com/hmtheboy154/mt7902).
 
-## Tests (run first)
+## Tests (run first) — do not harm the system
 
-Before installing or editing the repo:
+Primary goal: the driver patch/installer must **not harm** the user's system. Tests catch installer regressions (scoped blacklist, side-effect warnings, uninstall path) **before** `sudo ./mt7902.sh install-all`:
 
 ```bash
 ./tests/run-tests.sh
@@ -63,7 +63,17 @@ Before installing or editing the repo:
 make test
 ```
 
-Smoke tests need no root and no hardware. After install: `make test-hw` / `./mt7902.sh verify`.
+Tests need no root and no hardware. After install: `make test-hw` / `./mt7902.sh verify`.
+
+### Rollback
+
+Before changing the system, the installer saves originals under `/var/lib/mt7902-fix/backup`. If Wi‑Fi/Bluetooth never come up:
+
+```bash
+sudo ./mt7902.sh rollback
+```
+
+On module load failure the installer offers rollback (or set `MT7902_AUTO_ROLLBACK=1` for non-interactive).
 
 ## Quick Start
 
@@ -214,12 +224,35 @@ ShutdownWatchdogSec=1min
 
 **Driver unload service:** `mt7902-driver-shutdown.service` (`modprobe -r mt7902e` before shutdown).
 
+## What is autoloaded (and what is not)
+
+The `mt7902.sh` script is **not** added to boot autostart and does **not** run as a daemon. You run it manually for install / verify / rollback / remove.
+
+After install, the system keeps:
+
+| Item | Location | Purpose |
+|------|----------|---------|
+| Module `mt7902e` | `/etc/modules-load.d/mt7902.conf` | Wi‑Fi autoload at boot |
+| Module `btusb_mt7902` | `/etc/modules-load.d/btusb_mt7902.conf` | Bluetooth autoload at boot |
+| Blacklist `btusb`/`btmtk` | `/etc/modprobe.d/blacklist_btusb.conf` | keep stock BT stack unloaded |
+| systemd timeouts | `/etc/systemd/system.conf.d/99-timeouts.conf` + Docker/NM overrides | faster shutdown |
+| `mt7902-driver-shutdown.service` | systemd, `enable` | oneshot: unload `mt7902e` before shutdown |
+| `docker-shutdown.service` | systemd (if Docker present) | oneshot: stop containers before shutdown |
+
+Check module autoload:
+
+```bash
+cat /etc/modules-load.d/mt7902.conf
+cat /etc/modules-load.d/btusb_mt7902.conf
+systemctl is-enabled mt7902-driver-shutdown.service
+```
+
 ## Commands
 
 ### Tests (run first)
 
 ```bash
-./tests/run-tests.sh   # repo smoke tests
+./tests/run-tests.sh   # safety: patch must not harm the system
 make test              # same
 make test-hw           # after install on hardware
 ```
@@ -234,6 +267,7 @@ sudo ./mt7902.sh bluetooth    # Bluetooth only
 sudo ./mt7902.sh system       # systemd only
 ./mt7902.sh verify
 ./mt7902.sh status
+sudo ./mt7902.sh rollback     # restore settings from before install
 ./mt7902.sh diagnose
 sudo ./mt7902.sh remove
 ./mt7902.sh patch             # kernel patch prep (needs kernel tree)
@@ -304,7 +338,7 @@ sudo dkms install -m btusb_mt7902 -v git --force
 FIX-MediaTek-MT7902-MT7921-MT7961-WIFI/
 ├── mt7902.sh           # Wi‑Fi / BT / system / patches
 ├── Makefile
-├── tests/run-tests.sh  # Smoke tests (run first)
+├── tests/run-tests.sh  # Safety tests (do not harm the system)
 ├── gen4-mt7902/        # Wi‑Fi (mt7902e)
 ├── btusb_mt7902/       # Bluetooth (btusb_mt7902)
 ├── patches/            # PCI ID patches for upstream

@@ -70,7 +70,7 @@ check-status:
 	@echo ""
 	@bluetoothctl show 2>/dev/null | head -8 || echo "  Bluetooth контроллер недоступен"
 
-# Repo smoke tests (no root / no hardware) — run first when developing
+# Safety / regression tests — run first when developing (must not harm users)
 test:
 	./tests/run-tests.sh
 
@@ -114,8 +114,8 @@ patch-check:
 help:
 	@echo "MediaTek MT7902 WiFi + Bluetooth"
 	@echo ""
-	@echo "Тесты (сначала):"
-	@echo "  make test            # smoke-тесты репозитория (без root)"
+	@echo "Тесты (сначала — не навредить системе):"
+	@echo "  make test            # безопасность установщика/патча (без root)"
 	@echo "  make test-hw         # проверка на железе после установки"
 	@echo ""
 	@echo "Установка:"

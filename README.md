@@ -72,9 +72,9 @@ lsusb | grep -iE '13d3|0e8d|Wireless|Bluetooth'
 - Зависание при выключении из‑за драйвера / Docker / NetworkManager
 - Нет автозагрузки модулей после перезагрузки
 
-## Тесты (сначала)
+## Тесты (сначала) — не навредить системе
 
-Перед установкой или правками репозитория:
+Главная задача тестов: убедиться, что патч/установщик **не навредит** системе пользователя (узкий blacklist, предупреждения о побочных эффектах, путь удаления). Запускайте до `install-all` и до правок установщика:
 
 ```bash
 ./tests/run-tests.sh
@@ -82,8 +82,17 @@ lsusb | grep -iE '13d3|0e8d|Wireless|Bluetooth'
 make test
 ```
 
-Smoke-тесты не требуют root и железа. После установки на ноутбуке: `make test-hw` / `./mt7902.sh verify`.
+Тесты не требуют root и железа. После установки на ноутбуке: `make test-hw` / `./mt7902.sh verify`.
 
+### Откат (если Wi‑Fi / Bluetooth не появились)
+
+Перед изменением системы установщик сохраняет исходные конфиги в `/var/lib/mt7902-fix/backup`. Если модули не загрузились — предложит откат; после reboot, если сети всё ещё нет:
+
+```bash
+sudo ./mt7902.sh rollback
+```
+
+Автоматический откат при сбое загрузки модулей: `MT7902_AUTO_ROLLBACK=1 sudo ./mt7902.sh install-all`.
 ## Быстрый старт
 
 ```bash
@@ -114,7 +123,7 @@ bluetoothctl show
 FIX-MediaTek-MT7902-MT7921-MT7961-WIFI/
 ├── mt7902.sh              # Универсальный скрипт (Wi‑Fi, BT, system, патчи)
 ├── Makefile
-├── tests/run-tests.sh     # Smoke-тесты репозитория (запускать первыми)
+├── tests/run-tests.sh     # Тесты безопасности: патч не должен вредить системе
 ├── gen4-mt7902/           # Wi‑Fi: hmtheboy154/mt7902 (ветка backport) → модуль mt7902e
 ├── btusb_mt7902/          # Bluetooth: та же репа, ветка bluetooth_backport
 ├── patches/               # Патчи PCI ID / метаданные для ядра
@@ -132,22 +141,23 @@ FIX-MediaTek-MT7902-MT7921-MT7961-WIFI/
 ## Использование
 
 ```bash
-./tests/run-tests.sh          # тесты репозитория — сначала
+./tests/run-tests.sh          # безопасность патча — сначала
 sudo ./mt7902.sh install-all  # Wi‑Fi + Bluetooth + systemd
 sudo ./mt7902.sh install      # Wi‑Fi + системные настройки
 sudo ./mt7902.sh driver       # только Wi‑Fi драйвер
 sudo ./mt7902.sh bluetooth    # Bluetooth драйвер + прошивка
 sudo ./mt7902.sh system       # только systemd-оптимизации
 ./mt7902.sh verify            # проверка
+sudo ./mt7902.sh rollback     # вернуть настройки до установки
 ./mt7902.sh diagnose          # диагностика
-sudo ./mt7902.sh remove       # удаление настроек/автозагрузки
+sudo ./mt7902.sh remove       # удаление (через бэкап, если есть)
 ./mt7902.sh help
 ```
 
 Makefile:
 
 ```bash
-make test             # smoke-тесты (сначала)
+make test             # тесты безопасности (сначала)
 make test-hw          # проверка на железе после установки
 make quick-install    # через mt7902.sh install-all
 sudo make install     # сборка/установка Wi‑Fi
@@ -158,6 +168,18 @@ sudo make uninstall
 ```
 
 > `mt7921e_simple_patch.c` — устаревший stub; для MT7902 используйте `mt7902e` / `btusb_mt7902`.
+
+## Автозагрузка и systemd
+
+`mt7902.sh` **не** ставится в автозагрузку и **не** работает демоном. После `install-all` в системе остаются:
+
+- автозагрузка модулей: `/etc/modules-load.d/mt7902.conf` (`mt7902e`), `/etc/modules-load.d/btusb_mt7902.conf` (`btusb_mt7902`)
+- blacklist: `/etc/modprobe.d/blacklist_btusb.conf`
+- systemd oneshot на выключение: `mt7902-driver-shutdown.service` (и опционально `docker-shutdown.service`)
+- overrides таймаутов: `99-timeouts.conf`, Docker, NetworkManager
+
+Подробности: [GUIDE_RU.md](GUIDE_RU.md) § «Что ставится в автозагрузку».
+
 ## Bluetooth — кратко
 
 1. Устанавливается модуль `btusb_mt7902` и прошивка `mediatek/BT_RAM_CODE_MT7902_1_1_hdr.bin`

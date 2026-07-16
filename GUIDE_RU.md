@@ -53,9 +53,9 @@ cat /sys/class/dmi/id/sys_vendor /sys/class/dmi/id/product_name
 
 Репозиторий драйверов: [hmtheboy154/mt7902](https://github.com/hmtheboy154/mt7902).
 
-## Тесты (сначала)
+## Тесты (сначала) — не навредить системе
 
-Перед установкой или правками в репозитории:
+Главная задача: патч драйверов не должен вредить системе пользователя. Тесты ловят регрессии установщика (blacklist, предупреждения, uninstall) **до** `sudo ./mt7902.sh install-all`:
 
 ```bash
 ./tests/run-tests.sh
@@ -64,6 +64,16 @@ make test
 ```
 
 Тесты не требуют root и железа. После установки: `make test-hw` / `./mt7902.sh verify`.
+
+### Откат настроек
+
+Перед установкой сохраняется бэкап в `/var/lib/mt7902-fix/backup`. Если Wi‑Fi/Bluetooth не поднялись:
+
+```bash
+sudo ./mt7902.sh rollback
+```
+
+При сбое загрузки модулей установщик сам предложит откат (или `MT7902_AUTO_ROLLBACK=1` без вопроса).
 
 ## Быстрый старт
 
@@ -214,12 +224,35 @@ ShutdownWatchdogSec=1min
 
 **Сервис выгрузки драйвера:** `mt7902-driver-shutdown.service` (`modprobe -r mt7902e` перед shutdown).
 
+## Что ставится в автозагрузку (и чего нет)
+
+Скрипт `mt7902.sh` **не** прописывается в автозагрузку и **не** работает как демон. Его запускают вручную: install / verify / rollback / remove.
+
+После установки в системе остаётся следующее:
+
+| Что | Куда | Назначение |
+|-----|------|------------|
+| Модуль `mt7902e` | `/etc/modules-load.d/mt7902.conf` | автозагрузка Wi‑Fi при boot |
+| Модуль `btusb_mt7902` | `/etc/modules-load.d/btusb_mt7902.conf` | автозагрузка Bluetooth при boot |
+| Blacklist `btusb`/`btmtk` | `/etc/modprobe.d/blacklist_btusb.conf` | чтобы не грузился штатный BT‑стек |
+| Таймауты systemd | `/etc/systemd/system.conf.d/99-timeouts.conf` + overrides Docker/NM | быстрее выключение |
+| `mt7902-driver-shutdown.service` | systemd, `enable` | oneshot: выгрузить `mt7902e` перед shutdown |
+| `docker-shutdown.service` | systemd (если есть Docker) | oneshot: остановить контейнеры перед shutdown |
+
+Проверка автозагрузки модулей:
+
+```bash
+cat /etc/modules-load.d/mt7902.conf
+cat /etc/modules-load.d/btusb_mt7902.conf
+systemctl is-enabled mt7902-driver-shutdown.service
+```
+
 ## Установка и команды
 
 ### Тесты (запускать первыми)
 
 ```bash
-./tests/run-tests.sh   # smoke-тесты репозитория
+./tests/run-tests.sh   # безопасность: патч не должен вредить системе
 make test              # то же
 make test-hw           # после установки на железе
 ```
@@ -234,6 +267,7 @@ sudo ./mt7902.sh bluetooth    # только Bluetooth
 sudo ./mt7902.sh system       # только systemd
 ./mt7902.sh verify
 ./mt7902.sh status
+sudo ./mt7902.sh rollback     # вернуть настройки до установки
 ./mt7902.sh diagnose
 sudo ./mt7902.sh remove
 ./mt7902.sh patch             # подготовка патчей для ядра (нужно дерево kernel)
@@ -304,7 +338,7 @@ sudo dkms install -m btusb_mt7902 -v git --force
 FIX-MediaTek-MT7902-MT7921-MT7961-WIFI/
 ├── mt7902.sh           # Установка Wi‑Fi / BT / system / патчи
 ├── Makefile
-├── tests/run-tests.sh  # Smoke-тесты (запускать первыми)
+├── tests/run-tests.sh  # Тесты безопасности (не навредить системе)
 ├── gen4-mt7902/        # Wi‑Fi (mt7902e)
 ├── btusb_mt7902/       # Bluetooth (btusb_mt7902)
 ├── patches/            # Патчи PCI ID для отправки в ядро

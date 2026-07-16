@@ -21,6 +21,21 @@ WIFI_REPO="https://github.com/hmtheboy154/mt7902.git"
 WIFI_BRANCH="backport"
 BT_BRANCH="bluetooth_backport"
 
+# Pre-install backup of user configs (for rollback if Wi‑Fi/BT fail)
+BACKUP_ROOT="/var/lib/mt7902-fix"
+BACKUP_DIR="$BACKUP_ROOT/backup"
+MANAGED_FILES=(
+    /etc/modules-load.d/mt7902.conf
+    /etc/modules-load.d/btusb_mt7902.conf
+    /etc/modprobe.d/mt7902.conf
+    /etc/modprobe.d/blacklist_btusb.conf
+    /etc/systemd/system.conf.d/99-timeouts.conf
+    /etc/systemd/system/docker.service.d/override.conf
+    /etc/systemd/system/NetworkManager.service.d/override.conf
+    /etc/systemd/system/docker-shutdown.service
+    /etc/systemd/system/mt7902-driver-shutdown.service
+)
+
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "$SCRIPT_DIR"
 SCRIPT_ARGS=("$@")
@@ -294,32 +309,227 @@ verify_installation() {
     [[ -f /etc/systemd/system.conf.d/99-timeouts.conf ]] && echo "  ✅ Системные таймауты" || echo "  ❌ Системные таймауты"
     [[ -f /etc/modules-load.d/mt7902.conf ]] && echo "  ✅ Автозагрузка Wi‑Fi" || echo "  ❌ Автозагрузка Wi‑Fi"
     [[ -f /etc/modules-load.d/btusb_mt7902.conf ]] && echo "  ✅ Автозагрузка Bluetooth" || echo "  ⚠️  Автозагрузка Bluetooth"
+
+    if [[ -d "$BACKUP_DIR" ]]; then
+        echo -e "\n💾 Откат:"
+        echo "  ✅ Бэкап настроек: $BACKUP_DIR"
+        echo "  → если после reboot нет Wi‑Fi/BT: sudo $0 rollback"
+    fi
+}
+
+# ===== BACKUP / ROLLBACK (restore user's original settings) =====
+
+backup_one_file() {
+    local src="$1"
+    local rel="${src#/}"
+    local dest="$BACKUP_DIR/files/$rel"
+    mkdir -p "$(dirname "$dest")"
+    if [[ -e "$src" ]]; then
+        cp -a "$src" "$dest"
+        echo "present|$src" >> "$BACKUP_DIR/manifest"
+    else
+        : > "${dest}.absent"
+        echo "absent|$src" >> "$BACKUP_DIR/manifest"
+    fi
+}
+
+create_pre_install_backup() {
+    print_step "Сохранение исходных настроек (для отката)"
+    mkdir -p "$BACKUP_ROOT"
+    rm -rf "$BACKUP_DIR"
+    mkdir -p "$BACKUP_DIR/files"
+    : > "$BACKUP_DIR/manifest"
+
+    date -Is > "$BACKUP_DIR/created_at"
+    uname -r > "$BACKUP_DIR/kernel"
+    {
+        echo "want_wifi=${1:-0}"
+        echo "want_bt=${2:-0}"
+        echo "want_system=${3:-0}"
+    } > "$BACKUP_DIR/intent"
+
+    local f
+    for f in "${MANAGED_FILES[@]}"; do
+        backup_one_file "$f"
+    done
+
+    {
+        systemctl is-enabled mt7902-driver-shutdown.service 2>/dev/null || echo "absent"
+        systemctl is-enabled docker-shutdown.service 2>/dev/null || echo "absent"
+    } > "$BACKUP_DIR/services_enabled.txt" || true
+
+    lsmod > "$BACKUP_DIR/lsmod_before.txt" 2>/dev/null || true
+    print_success "Бэкап сохранён: $BACKUP_DIR"
+}
+
+wifi_seems_up() {
+    lsmod | grep -q "$WIFI_MOD" || return 1
+    ip -br link 2>/dev/null | grep -qiE 'wlan|wlp' && return 0
+    # Module loaded is enough pre-reboot; iface may appear after NM settles
+    return 0
+}
+
+bt_seems_up() {
+    lsmod | grep -q "$BT_MOD" || return 1
+    return 0
+}
+
+restore_one_file() {
+    local src="$1"
+    local rel="${src#/}"
+    local dest="$BACKUP_DIR/files/$rel"
+    if [[ -f "${dest}.absent" ]]; then
+        rm -f "$src"
+    elif [[ -e "$dest" ]]; then
+        mkdir -p "$(dirname "$src")"
+        cp -a "$dest" "$src"
+    else
+        # No backup entry — remove our file if present
+        rm -f "$src"
+    fi
+}
+
+unload_our_modules() {
+    modprobe -r "$WIFI_MOD" 2>/dev/null || true
+    modprobe -r "$BT_MOD" 2>/dev/null || true
+}
+
+try_uninstall_driver_packages() {
+    if [[ -d "$WIFI_DIR" ]] && [[ -f "$WIFI_DIR/Makefile" ]]; then
+        print_info "Попытка make uninstall (Wi‑Fi)..."
+        (cd "$WIFI_DIR" && make uninstall) 2>/dev/null || true
+    fi
+    if [[ -d "$BT_DIR" ]] && [[ -f "$BT_DIR/Makefile" ]]; then
+        print_info "Попытка make uninstall (Bluetooth)..."
+        (cd "$BT_DIR" && make uninstall) 2>/dev/null || true
+    fi
+}
+
+rollback_installation() {
+    print_step "Откат к исходным настройкам пользователя"
+
+    if [[ ! -d "$BACKUP_DIR" ]] || [[ ! -f "$BACKUP_DIR/manifest" ]]; then
+        print_warning "Бэкап не найден ($BACKUP_DIR) — удаляю только файлы этого пакета"
+    fi
+
+    unload_our_modules
+
+    local f
+    if [[ -f "$BACKUP_DIR/manifest" ]]; then
+        while IFS='|' read -r state path; do
+            [[ -n "$path" ]] || continue
+            if [[ "$state" == "absent" ]]; then
+                rm -f "$path"
+            elif [[ "$state" == "present" ]]; then
+                restore_one_file "$path"
+            fi
+        done < "$BACKUP_DIR/manifest"
+    else
+        for f in "${MANAGED_FILES[@]}"; do
+            rm -f "$f"
+        done
+    fi
+
+    systemctl disable docker-shutdown.service 2>/dev/null || true
+    systemctl disable mt7902-driver-shutdown.service 2>/dev/null || true
+    systemctl daemon-reload 2>/dev/null || true
+
+    # Stock BT stack was blacklisted — try to bring it back
+    if [[ ! -f /etc/modprobe.d/blacklist_btusb.conf ]]; then
+        modprobe btmtk 2>/dev/null || true
+        modprobe btusb 2>/dev/null || true
+        systemctl restart bluetooth 2>/dev/null || true
+    fi
+
+    try_uninstall_driver_packages
+    depmod -a 2>/dev/null || true
+
+    print_success "Исходные настройки восстановлены"
+    print_info "При необходимости: sudo reboot"
+    print_info "Бэкап оставлен в $BACKUP_DIR (можно удалить вручную)"
+}
+
+prompt_rollback_if_failed() {
+    local want_wifi="${1:-0}"
+    local want_bt="${2:-0}"
+    local failed=0
+
+    if [[ "$want_wifi" == "1" ]]; then
+        if wifi_seems_up; then
+            print_success "Wi‑Fi: модуль $WIFI_MOD загружен"
+        else
+            print_error "Wi‑Fi: модуль $WIFI_MOD не загрузился"
+            failed=1
+        fi
+    fi
+
+    if [[ "$want_bt" == "1" ]]; then
+        if bt_seems_up; then
+            print_success "Bluetooth: модуль $BT_MOD загружен"
+        else
+            print_error "Bluetooth: модуль $BT_MOD не загрузился"
+            failed=1
+        fi
+    fi
+
+    echo ""
+    if [[ "$failed" -eq 0 ]]; then
+        print_info "Если после reboot Wi‑Fi/BT всё ещё нет — откат:"
+        echo "  sudo $0 rollback"
+        return 0
+    fi
+
+    print_warning "Установка не дала рабочий интерфейс прямо сейчас."
+    print_info "Бэкап исходных настроек: $BACKUP_DIR"
+
+    local do_rb=""
+    if [[ "${MT7902_AUTO_ROLLBACK:-}" == "1" ]]; then
+        do_rb="y"
+        print_warning "MT7902_AUTO_ROLLBACK=1 — выполняю откат автоматически"
+    elif [[ -t 0 ]]; then
+        read -r -p "Откатить настройки к состоянию до установки? [Y/n]: " do_rb
+        do_rb="${do_rb:-Y}"
+    else
+        print_warning "Нет TTY — откат не запрошен. Выполните: sudo $0 rollback"
+        return 1
+    fi
+
+    if [[ "$do_rb" =~ ^[Yy]$ ]]; then
+        rollback_installation
+        return 2
+    fi
+
+    print_info "Откат отложен. Позже: sudo $0 rollback"
+    return 1
 }
 
 remove_installation() {
     print_step "Удаление установки"
-    print_warning "Удаление драйверных настроек и системных файлов..."
+    print_warning "Будут удалены настройки пакета; при наличии бэкапа предпочтите: sudo $0 rollback"
 
     read -r -p "Вы уверены? (y/N): " -n 1 REPLY
     echo
     [[ $REPLY =~ ^[Yy]$ ]] || { print_info "Отмена"; exit 0; }
 
-    modprobe -r "$WIFI_MOD" 2>/dev/null || true
-    modprobe -r "$BT_MOD" 2>/dev/null || true
+    if [[ -d "$BACKUP_DIR" ]] && [[ -f "$BACKUP_DIR/manifest" ]]; then
+        print_info "Найден бэкап — восстанавливаю исходные настройки"
+        rollback_installation
+        return
+    fi
 
-    rm -f /etc/modules-load.d/mt7902.conf
-    rm -f /etc/modules-load.d/btusb_mt7902.conf
-    rm -f /etc/modprobe.d/mt7902.conf
-    rm -f /etc/modprobe.d/blacklist_btusb.conf
-    rm -f /etc/systemd/system.conf.d/99-timeouts.conf
-    rm -f /etc/systemd/system/docker.service.d/override.conf
-    rm -f /etc/systemd/system/NetworkManager.service.d/override.conf
-    rm -f /etc/systemd/system/docker-shutdown.service
-    rm -f /etc/systemd/system/mt7902-driver-shutdown.service
+    unload_our_modules
+
+    local f
+    for f in "${MANAGED_FILES[@]}"; do
+        rm -f "$f"
+    done
 
     systemctl disable docker-shutdown.service 2>/dev/null || true
     systemctl disable mt7902-driver-shutdown.service 2>/dev/null || true
     systemctl daemon-reload
+
+    modprobe btmtk 2>/dev/null || true
+    modprobe btusb 2>/dev/null || true
 
     print_success "Конфигурация удалена (модули .ko в /lib/modules можно убрать через make uninstall в gen4-mt7902 / btusb_mt7902)"
 }
@@ -398,6 +608,7 @@ full_install() {
     print_header
     check_root
     check_system
+    create_pre_install_backup 1 0 1
     install_deps
     stop_services
     install_driver
@@ -407,6 +618,7 @@ full_install() {
     enable_services
     load_driver
     verify_installation
+    prompt_rollback_if_failed 1 0 || true
     show_instructions
 }
 
@@ -414,12 +626,14 @@ install_only_driver() {
     print_header
     check_root
     check_system
+    create_pre_install_backup 1 0 0
     install_deps
     stop_services
     install_driver
     setup_autoload
     load_driver
     verify_installation
+    prompt_rollback_if_failed 1 0 || true
     show_instructions
 }
 
@@ -427,19 +641,23 @@ install_only_bluetooth() {
     print_header
     check_root
     check_system
+    create_pre_install_backup 0 1 0
     install_deps
     install_bluetooth
     verify_installation
+    prompt_rollback_if_failed 0 1 || true
     echo ""
     print_success "Bluetooth установлен!"
     print_info "🔄 Рекомендуется: sudo reboot"
     print_info "📡 Проверка: bluetoothctl show"
+    print_info "↩️  Откат при проблемах: sudo $0 rollback"
 }
 
 install_all() {
     print_header
     check_root
     check_system
+    create_pre_install_backup 1 1 1
     install_deps
     stop_services
     install_driver
@@ -450,22 +668,26 @@ install_all() {
     load_driver
     install_bluetooth
     verify_installation
+    prompt_rollback_if_failed 1 1 || true
     echo ""
     print_success "Полная установка Wi‑Fi + Bluetooth завершена!"
     print_info "🔄 Обязательно: sudo reboot"
     print_info "📡 nmcli device status && bluetoothctl show"
+    print_info "↩️  Если после reboot нет Wi‑Fi/BT: sudo $0 rollback"
 }
 
 install_only_system() {
     print_header
     check_root
     check_system
+    create_pre_install_backup 0 0 1
     apply_system_settings
     create_services
     enable_services
     verify_installation
     print_success "Системные настройки применены!"
     print_info "🔄 Перезагрузите систему: sudo reboot"
+    print_info "↩️  Откат: sudo $0 rollback"
 }
 
 prepare_patches() {
@@ -493,6 +715,9 @@ show_instructions() {
     echo "  nmcli device status"
     echo "  bluetoothctl show"
     echo ""
+    print_info "↩️  Откат (вернуть исходные настройки):"
+    echo "  sudo $0 rollback"
+    echo ""
     print_info "📚 GUIDE_EN.md / GUIDE_RU.md"
 }
 
@@ -508,7 +733,8 @@ show_help() {
     echo "  bluetooth    Только Bluetooth (btusb_mt7902)"
     echo "  system       Только systemd-оптимизации"
     echo "  verify       Проверка установки"
-    echo "  remove       Удаление конфигурации"
+    echo "  rollback     Откат к настройкам до установки (если нет Wi‑Fi/BT)"
+    echo "  remove       Удаление конфигурации (через бэкап, если есть)"
     echo ""
     echo "📤 Патчи:"
     echo "  patch        Подготовка патчей для ядра"
@@ -520,7 +746,8 @@ show_help() {
     echo ""
     echo "Примеры:"
     echo "  sudo $0 install-all"
-    echo "  sudo $0 bluetooth"
+    echo "  sudo $0 rollback"
+    echo "  MT7902_AUTO_ROLLBACK=1 sudo $0 install-all   # откат без вопроса при сбое"
     echo ""
     echo "📚 GUIDE_EN.md / GUIDE_RU.md / README.md"
 }
@@ -567,6 +794,11 @@ case "${1:-help}" in
     bluetooth|bt) install_only_bluetooth ;;
     system) install_only_system ;;
     verify|status) check_status ;;
+    rollback|restore)
+        print_header
+        check_root
+        rollback_installation
+        ;;
     remove)
         print_header
         check_root
