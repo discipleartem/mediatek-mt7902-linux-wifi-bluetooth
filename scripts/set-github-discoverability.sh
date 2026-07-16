@@ -40,11 +40,10 @@ REMOVE_TOPICS=(
 echo "Updating description for $REPO ..."
 gh repo edit "$REPO" --description "$DESC"
 
-echo "Removing stale/typo topics (ignore errors) ..."
+echo "Removing stale/typo topics (ignore if absent) ..."
 for t in "${REMOVE_TOPICS[@]}"; do
-  gh api -X DELETE "repos/${REPO}/topics/${t}" 2>/dev/null || true
-  # older gh: --remove-topic
-  gh repo edit "$REPO" --remove-topic "$t" 2>/dev/null || true
+  # Only --remove-topic; there is no DELETE /topics/{name} REST endpoint.
+  gh repo edit "$REPO" --remove-topic "$t" >/dev/null 2>&1 || true
 done
 
 echo "Updating topics ..."
