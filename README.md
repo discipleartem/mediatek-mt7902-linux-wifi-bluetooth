@@ -167,7 +167,7 @@ sudo make uninstall
 
 ## Версия
 
-**5.0** — Wi‑Fi (`mt7902e`) + Bluetooth (`btusb_mt7902`), описание поддерживаемого железа, DKMS.
+**5.0** — Wi‑Fi (`mt7902e`) + Bluetooth (`btusb_mt7902`), железо, DKMS, AI-discoverability (`llms.txt`, `AGENTS.md`).
 
 ---
 
