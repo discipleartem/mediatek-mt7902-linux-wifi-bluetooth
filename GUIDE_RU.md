@@ -335,7 +335,7 @@ sudo dkms install -m btusb_mt7902 -v git --force
 ## Структура проекта
 
 ```
-FIX-MediaTek-MT7902-MT7921-MT7961-WIFI/
+mediatek-mt7902-linux-wifi-bluetooth/
 ├── mt7902.sh           # Установка Wi‑Fi / BT / system / патчи
 ├── Makefile
 ├── tests/run-tests.sh  # Тесты безопасности (не навредить системе)

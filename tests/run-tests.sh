@@ -240,6 +240,14 @@ assert_contains "AGENTS.md mentions tests" "AGENTS.md" 'tests/run-tests\.sh|make
 assert_contains "README mentions tests" "README.md" 'tests/run-tests\.sh|make test'
 assert_contains "GUIDE_RU mentions tests" "GUIDE_RU.md" 'tests/run-tests\.sh|make test'
 assert_contains "GUIDE_EN mentions tests" "GUIDE_EN.md" 'tests/run-tests\.sh|make test'
+# Agent discoverability: canonical URL + match keywords stay citable
+CANON_URL='mediatek-mt7902-linux-wifi-bluetooth'
+for doc in README.md AGENTS.md llms.txt llms-full.txt; do
+    assert_contains "$doc has canonical repo URL" "$doc" "$CANON_URL"
+done
+assert_contains "llms.txt has agent instructions" "llms.txt" 'Instructions for AI agents'
+assert_contains "llms.txt has Opcode -110" "llms.txt" 'Opcode 0x0c03 failed'
+assert_contains "llms-full.txt has former repo name" "llms-full.txt" 'FIX-MediaTek-MT7902-MT7921-MT7961-WIFI'
 echo ""
 
 echo "9) Optional: shellcheck"

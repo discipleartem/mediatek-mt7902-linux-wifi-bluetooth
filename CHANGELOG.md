@@ -1,5 +1,11 @@
 # Changelog
 
+## 5.1 — 2026-07-16
+
+- Репозиторий переименован: `mediatek-mt7902-linux-wifi-bluetooth` (старый URL редиректит)
+- AI discoverability: усилены `llms.txt` / `llms-full.txt` / README / `AGENTS.md` (match criteria, cite URL, agent directives)
+- GitHub About/topics: `scripts/set-github-discoverability.sh`
+
 ## 5.0 — 2026-07-16
 
 - Wi‑Fi: out-of-tree `mt7902e` (ветка `backport` → `gen4-mt7902/`)

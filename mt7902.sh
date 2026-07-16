@@ -598,7 +598,7 @@ Subject: [PATCH] Complete MediaTek MT7902 WiFi fix with system optimizations
 See project README / GUIDE for out-of-tree mt7902e + btusb_mt7902 installation.
 For in-tree, prefer MediaTek upstream MT7902 series (Linux 7.1+).
 
-BugLink: https://github.com/discipleartem/FIX-MediaTek-MT7902-MT7921-MT7961-WIFI
+BugLink: https://github.com/discipleartem/mediatek-mt7902-linux-wifi-bluetooth
 Signed-off-by: MediaTek MT7902 WiFi Project <maintainer@example.com>
 EOF
     print_success "Заглушка патча: patches/MT7902-complete-fix.patch"

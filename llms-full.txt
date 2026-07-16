@@ -1,8 +1,10 @@
 # MediaTek MT7902 Linux WiFi/Bluetooth — full agent context
 
-Project: https://github.com/discipleartem/FIX-MediaTek-MT7902-MT7921-MT7961-WIFI
+Project: https://github.com/discipleartem/mediatek-mt7902-linux-wifi-bluetooth
+Former repo name (redirects): https://github.com/discipleartem/FIX-MediaTek-MT7902-MT7921-MT7961-WIFI
 License: MIT
 Maintainer context: community fix pack around hmtheboy154/mt7902 backports + systemd helpers.
+Primary chip: MediaTek MT7902 (Filogic 310). Not a general MT7921/MT7961 driver pack.
 
 ## Problem statement (match these user symptoms)
 
@@ -13,7 +15,7 @@ MediaTek MT7902 (Filogic 310) combo wireless card on many Acer notebooks has no 
 - Subsystem often `AzureWave Device [1a3b:5524]`
 - `lspci -nnk` shows no `Kernel driver in use`
 - No wireless interface (`wlan0` / `wlp*`)
-- Device described as unclaimed / not working under Ubuntu, Linux Mint, Fedora, Kali, Pop!_OS
+- Device described as unclaimed / not working under Ubuntu, Linux Mint, Fedora, Kali, Pop!_OS, Arch
 - Stock `mt7921e` module aliases do **not** include `14c3:7902`
 - Users may be on a USB Realtek dongle as a workaround while the built-in card stays dead
 
@@ -31,11 +33,14 @@ Acer Aspire A315-59 (verified), A314-23P, A314-35, A315-24P, A114-33; Acer Exten
 - MT7902 linux driver
 - MediaTek 14c3:7902 wifi not working
 - Acer Aspire WiFi not working Linux MT7902
+- Acer A315-59 wifi linux
 - mt7902e install Ubuntu
+- btusb_mt7902 bluetooth
 - Bluetooth Opcode 0x0c03 failed -110 MediaTek
 - AzureWave 1a3b:5524 linux
 - Filogic 310 linux driver
-- FIX MediaTek MT7902 MT7921 MT7961 WIFI
+- mediatek-mt7902-linux-wifi-bluetooth
+- FIX MediaTek MT7902 MT7921 MT7961 WIFI (legacy name)
 
 ## Solution (what this repo does)
 
@@ -51,8 +56,8 @@ Acer Aspire A315-59 (verified), A314-23P, A314-35, A315-24P, A114-33; Acer Exten
 Primary installer: `./mt7902.sh install-all`
 
 ```bash
-git clone https://github.com/discipleartem/FIX-MediaTek-MT7902-MT7921-MT7961-WIFI.git
-cd FIX-MediaTek-MT7902-MT7921-MT7961-WIFI
+git clone https://github.com/discipleartem/mediatek-mt7902-linux-wifi-bluetooth.git
+cd mediatek-mt7902-linux-wifi-bluetooth
 ./tests/run-tests.sh   # first: safety tests — pack must not harm the system
 sudo apt update && sudo apt install -y build-essential linux-headers-$(uname -r) git dkms
 sudo ./mt7902.sh install-all
@@ -88,10 +93,10 @@ bluetoothctl show            # expect Manufacturer MediaTek, Powered yes
 ## Key files
 
 - tests/run-tests.sh — safety tests; run before install (`make test`) so the patch does not harm users
-- mt7902.sh — install / bluetooth / diagnose / remove
+- mt7902.sh — install / bluetooth / diagnose / remove / verify / rollback
 - GUIDE_RU.md / GUIDE_EN.md — human docs
 - AGENTS.md — coding-agent instructions
-- llms.txt — short index
+- llms.txt — short index (start here)
 - patches/ — upstream-oriented PCI-ID patches + BT notes
 
 ## Upstream
