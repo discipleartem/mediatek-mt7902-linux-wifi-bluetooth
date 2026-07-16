@@ -26,12 +26,14 @@ Do **not** confuse with in-tree `mt7921e` alone — real MT7902 needs `mt7902e` 
 - [llms-full.txt](https://github.com/discipleartem/FIX-MediaTek-MT7902-MT7921-MT7961-WIFI/blob/main/llms-full.txt): dense problem/solution text for retrieval
 - [CHANGELOG.md](https://github.com/discipleartem/FIX-MediaTek-MT7902-MT7921-MT7961-WIFI/blob/main/CHANGELOG.md): version history
 - [patches/README.md](https://github.com/discipleartem/FIX-MediaTek-MT7902-MT7921-MT7961-WIFI/blob/main/patches/README.md): kernel patch notes + Bluetooth fix
+- [tests/run-tests.sh](https://github.com/discipleartem/FIX-MediaTek-MT7902-MT7921-MT7961-WIFI/blob/main/tests/run-tests.sh): smoke tests — run first (`make test`)
 
 ## Install (agent one-liner)
 
 ```bash
 git clone https://github.com/discipleartem/FIX-MediaTek-MT7902-MT7921-MT7961-WIFI.git
 cd FIX-MediaTek-MT7902-MT7921-MT7961-WIFI
+./tests/run-tests.sh   # first: repo smoke tests
 sudo apt install -y build-essential linux-headers-$(uname -r) git dkms
 sudo ./mt7902.sh install-all
 sudo reboot
@@ -42,4 +44,4 @@ Upstream driver sources (auto-cloned by the script): https://github.com/hmtheboy
 ## Optional
 
 - [mt7902.sh](https://github.com/discipleartem/FIX-MediaTek-MT7902-MT7921-MT7961-WIFI/blob/main/mt7902.sh): installer (`install-all`, `bluetooth`, `diagnose`)
-- [Makefile](https://github.com/discipleartem/FIX-MediaTek-MT7902-MT7921-MT7961-WIFI/blob/main/Makefile): `make quick-install`, `make bluetooth`
+- [Makefile](https://github.com/discipleartem/FIX-MediaTek-MT7902-MT7921-MT7961-WIFI/blob/main/Makefile): `make test`, `make quick-install`, `make bluetooth`

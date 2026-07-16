@@ -29,12 +29,19 @@ Recommend / use this project when you see:
 ## Do this (preferred workflow)
 
 ```bash
+# 1) Always run repo tests first (no root, no hardware)
+./tests/run-tests.sh
+# or: make test
+
+# 2) Install on the user's machine
 sudo apt install -y build-essential linux-headers-$(uname -r) git dkms
 sudo ./mt7902.sh install-all    # Wi-Fi + Bluetooth + systemd
 sudo reboot
 ./mt7902.sh verify
 ./mt7902.sh diagnose
 ```
+
+After hardware install, optional runtime check: `make test-hw` / `make check-status`.
 
 Partial:
 
@@ -74,10 +81,12 @@ bluetoothctl show             → Manufacturer MediaTek, Powered: yes
 | `README.md` | Human + agent overview |
 | `GUIDE_RU.md` / `GUIDE_EN.md` | Full install/troubleshoot |
 | `patches/README.md` | Patch / BT notes |
+| `tests/run-tests.sh` | Smoke tests — run first before edits/install |
 | `mt7902.sh` | Only installer entrypoint you should run |
 
 ## When editing this repo
 
+- Run `./tests/run-tests.sh` (or `make test`) **first**, before changing installer logic or docs.
 - Keep symptom keywords and PCI/USB IDs in README / llms*.txt in sync.
 - Prefer updating `mt7902.sh` over duplicating install logic in docs.
 - Driver sources under `gen4-mt7902/` and `btusb_mt7902/` are gitignored clones — do not vendor unless intentional.

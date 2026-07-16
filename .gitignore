@@ -15,6 +15,9 @@ modules.order
 gen4-mt7902/
 btusb_mt7902/
 
+# Local tool binaries (optional)
+tools/shellcheck
+
 # Editor / OS
 *~
 .DS_Store

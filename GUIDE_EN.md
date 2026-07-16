@@ -53,6 +53,18 @@ Any system with PCI ID **`14c3:7902`** is a candidate. The laptop list grows wit
 
 Upstream driver repo: [hmtheboy154/mt7902](https://github.com/hmtheboy154/mt7902).
 
+## Tests (run first)
+
+Before installing or editing the repo:
+
+```bash
+./tests/run-tests.sh
+# or
+make test
+```
+
+Smoke tests need no root and no hardware. After install: `make test-hw` / `./mt7902.sh verify`.
+
 ## Quick Start
 
 ```bash
@@ -204,6 +216,14 @@ ShutdownWatchdogSec=1min
 
 ## Commands
 
+### Tests (run first)
+
+```bash
+./tests/run-tests.sh   # repo smoke tests
+make test              # same
+make test-hw           # after install on hardware
+```
+
 ### `mt7902.sh`
 
 ```bash
@@ -223,6 +243,8 @@ sudo ./mt7902.sh remove
 ### Makefile
 
 ```bash
+make test
+make test-hw
 make quick-install
 sudo make install
 sudo make bluetooth
@@ -282,6 +304,7 @@ sudo dkms install -m btusb_mt7902 -v git --force
 FIX-MediaTek-MT7902-MT7921-MT7961-WIFI/
 ├── mt7902.sh           # Wi‑Fi / BT / system / patches
 ├── Makefile
+├── tests/run-tests.sh  # Smoke tests (run first)
 ├── gen4-mt7902/        # Wi‑Fi (mt7902e)
 ├── btusb_mt7902/       # Bluetooth (btusb_mt7902)
 ├── patches/            # PCI ID patches for upstream
@@ -294,6 +317,7 @@ FIX-MediaTek-MT7902-MT7921-MT7961-WIFI/
 ## Ready
 
 ```bash
+./tests/run-tests.sh
 sudo ./mt7902.sh install-all
 sudo reboot
 ```

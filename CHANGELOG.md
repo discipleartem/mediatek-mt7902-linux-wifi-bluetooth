@@ -7,6 +7,7 @@
 - Документация: поддерживаемые карты (MT7902 / MT7921 / MT7961) и ноутбуки Acer
 - Скрипт: `install-all`, `bluetooth`, автоклон источников, модуль `mt7902e` вместо `mt7902`
 - Makefile: `make bluetooth`, `make install-all` / `quick-install`
+- Тесты: `tests/run-tests.sh` / `make test` (smoke, без root); `make test-hw` на железе
 - AI discoverability: `llms.txt`, `llms-full.txt`, `AGENTS.md`, симптомы/PCI ID в README
 - Проверено: Acer Aspire A315-59, Ubuntu 24.04, ядро 6.17
 

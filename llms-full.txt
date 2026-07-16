@@ -51,6 +51,7 @@ Primary installer: `./mt7902.sh install-all`
 ```bash
 git clone https://github.com/discipleartem/FIX-MediaTek-MT7902-MT7921-MT7961-WIFI.git
 cd FIX-MediaTek-MT7902-MT7921-MT7961-WIFI
+./tests/run-tests.sh   # first: repo smoke tests (no root)
 sudo apt update && sudo apt install -y build-essential linux-headers-$(uname -r) git dkms
 sudo ./mt7902.sh install-all
 sudo reboot
@@ -67,13 +68,14 @@ bluetoothctl show            # expect Manufacturer MediaTek, Powered yes
 
 ## Agent procedure when fixing a user's machine
 
-1. Confirm PCI `14c3:7902` (required for this fix).
-2. Check Secure Boot; out-of-tree modules need SB off or signed MOK.
-3. Prefer `sudo ./mt7902.sh install-all` over inventing a new DKMS tree.
-4. For Bluetooth-only: `sudo ./mt7902.sh bluetooth` (warn: blacklists stock btusb — Realtek USB BT dies; Realtek USB WiFi rtw88 OK).
-5. After install, reboot; interface may be `wlpXsY` not `wlan0`.
-6. Dual-boot: disable Windows Fast Startup if card fails to init.
-7. Kernel 7.1+: check whether in-tree MT7902 already works before installing out-of-tree.
+1. Run `./tests/run-tests.sh` (or `make test`) first to confirm the clone is intact.
+2. Confirm PCI `14c3:7902` (required for this fix).
+3. Check Secure Boot; out-of-tree modules need SB off or signed MOK.
+4. Prefer `sudo ./mt7902.sh install-all` over inventing a new DKMS tree.
+5. For Bluetooth-only: `sudo ./mt7902.sh bluetooth` (warn: blacklists stock btusb — Realtek USB BT dies; Realtek USB WiFi rtw88 OK).
+6. After install, reboot; interface may be `wlpXsY` not `wlan0`.
+7. Dual-boot: disable Windows Fast Startup if card fails to init.
+8. Kernel 7.1+: check whether in-tree MT7902 already works before installing out-of-tree.
 
 ## Related chips (do not oversell)
 
@@ -82,6 +84,7 @@ bluetoothctl show            # expect Manufacturer MediaTek, Powered yes
 
 ## Key files
 
+- tests/run-tests.sh — smoke tests; run first (`make test`)
 - mt7902.sh — install / bluetooth / diagnose / remove
 - GUIDE_RU.md / GUIDE_EN.md — human docs
 - AGENTS.md — coding-agent instructions

@@ -23,6 +23,7 @@ BT_BRANCH="bluetooth_backport"
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "$SCRIPT_DIR"
+SCRIPT_ARGS=("$@")
 
 print_info() { echo -e "${BLUE}ℹ️  $1${NC}"; }
 print_success() { echo -e "${GREEN}✅ $1${NC}"; }
@@ -38,12 +39,19 @@ print_header() {
 }
 
 check_root() {
-    [[ $EUID -ne 0 ]] && { print_error "Требуются права суперпользователя: sudo $0 $*"; exit 1; }
+    if [[ $EUID -ne 0 ]]; then
+        print_error "Требуются права суперпользователя: sudo $0 ${SCRIPT_ARGS[*]}"
+        exit 1
+    fi
 }
 
 check_system() {
     print_info "Проверка системы..."
-    [[ -f /etc/os-release ]] && source /etc/os-release && print_info "Дистрибутив: $PRETTY_NAME"
+    if [[ -f /etc/os-release ]]; then
+        # shellcheck source=/dev/null
+        source /etc/os-release
+        print_info "Дистрибутив: $PRETTY_NAME"
+    fi
     print_info "Ядро: $(uname -r)"
 
     if lspci -nn 2>/dev/null | grep -qi "14c3:7902\|mediatek.*7902"; then
@@ -90,10 +98,14 @@ ensure_bt_sources() {
 
 stop_services() {
     print_step "Остановка конфликтующих сервисов"
-    systemctl is-active --quiet NetworkManager && systemctl stop NetworkManager || true
+    if systemctl is-active --quiet NetworkManager; then
+        systemctl stop NetworkManager || true
+    fi
     modprobe -r "$WIFI_MOD" 2>/dev/null || true
     modprobe -r mt7902 2>/dev/null || true
-    systemctl is-active --quiet docker && systemctl stop docker || true
+    if systemctl is-active --quiet docker; then
+        systemctl stop docker || true
+    fi
     print_success "Сервисы остановлены"
 }
 
@@ -236,7 +248,9 @@ EOF
 enable_services() {
     print_step "Активация сервисов"
     systemctl daemon-reload
-    command -v docker &>/dev/null && systemctl enable docker-shutdown.service || true
+    if command -v docker &>/dev/null; then
+        systemctl enable docker-shutdown.service || true
+    fi
     systemctl enable mt7902-driver-shutdown.service
     print_success "Сервисы активированы"
 }
@@ -248,9 +262,13 @@ load_driver() {
     lsmod | grep -q "$WIFI_MOD" && print_success "Драйвер $WIFI_MOD загружен"
 
     systemctl start NetworkManager 2>/dev/null || true
-    systemctl is-active --quiet NetworkManager && print_success "NetworkManager запущен" || true
+    if systemctl is-active --quiet NetworkManager; then
+        print_success "NetworkManager запущен"
+    fi
 
-    command -v docker &>/dev/null && systemctl start docker 2>/dev/null || true
+    if command -v docker &>/dev/null; then
+        systemctl start docker 2>/dev/null || true
+    fi
 }
 
 verify_installation() {

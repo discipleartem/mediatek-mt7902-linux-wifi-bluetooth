@@ -10,7 +10,7 @@ WIFI_MOD := mt7902e
 BT_MOD := btusb_mt7902
 PATCH_DRIVER := mt7921e_simple_patch
 
-.PHONY: all install clean uninstall test diagnose help quick-install install-all patch patch-check \
+.PHONY: all install clean uninstall test test-hw diagnose help quick-install install-all patch patch-check \
 	bluetooth install-bt gen4-driver install-gen4 check-status
 
 obj-m += $(PATCH_DRIVER).o
@@ -70,7 +70,12 @@ check-status:
 	@echo ""
 	@bluetoothctl show 2>/dev/null | head -8 || echo "  Bluetooth контроллер недоступен"
 
-test: check-status
+# Repo smoke tests (no root / no hardware) — run first when developing
+test:
+	./tests/run-tests.sh
+
+# Runtime check on a machine with MT7902 installed
+test-hw: check-status
 	@echo ""
 	@echo "Тест Wi‑Fi..."
 	@if lsmod | grep -q $(WIFI_MOD); then \
@@ -109,6 +114,10 @@ patch-check:
 help:
 	@echo "MediaTek MT7902 WiFi + Bluetooth"
 	@echo ""
+	@echo "Тесты (сначала):"
+	@echo "  make test            # smoke-тесты репозитория (без root)"
+	@echo "  make test-hw         # проверка на железе после установки"
+	@echo ""
 	@echo "Установка:"
 	@echo "  make quick-install   # Wi‑Fi + Bluetooth + system"
 	@echo "  make install-all     # то же через mt7902.sh"
@@ -117,7 +126,6 @@ help:
 	@echo ""
 	@echo "Проверка:"
 	@echo "  make check-status"
-	@echo "  make test"
 	@echo "  make diagnose"
 	@echo ""
 	@echo "Документация: README.md, GUIDE_RU.md, GUIDE_EN.md"

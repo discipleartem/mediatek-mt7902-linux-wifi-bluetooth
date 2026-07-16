@@ -72,6 +72,18 @@ lsusb | grep -iE '13d3|0e8d|Wireless|Bluetooth'
 - Зависание при выключении из‑за драйвера / Docker / NetworkManager
 - Нет автозагрузки модулей после перезагрузки
 
+## Тесты (сначала)
+
+Перед установкой или правками репозитория:
+
+```bash
+./tests/run-tests.sh
+# или
+make test
+```
+
+Smoke-тесты не требуют root и железа. После установки на ноутбуке: `make test-hw` / `./mt7902.sh verify`.
+
 ## Быстрый старт
 
 ```bash
@@ -102,6 +114,7 @@ bluetoothctl show
 FIX-MediaTek-MT7902-MT7921-MT7961-WIFI/
 ├── mt7902.sh              # Универсальный скрипт (Wi‑Fi, BT, system, патчи)
 ├── Makefile
+├── tests/run-tests.sh     # Smoke-тесты репозитория (запускать первыми)
 ├── gen4-mt7902/           # Wi‑Fi: hmtheboy154/mt7902 (ветка backport) → модуль mt7902e
 ├── btusb_mt7902/          # Bluetooth: та же репа, ветка bluetooth_backport
 ├── patches/               # Патчи PCI ID / метаданные для ядра
@@ -119,6 +132,7 @@ FIX-MediaTek-MT7902-MT7921-MT7961-WIFI/
 ## Использование
 
 ```bash
+./tests/run-tests.sh          # тесты репозитория — сначала
 sudo ./mt7902.sh install-all  # Wi‑Fi + Bluetooth + systemd
 sudo ./mt7902.sh install      # Wi‑Fi + системные настройки
 sudo ./mt7902.sh driver       # только Wi‑Fi драйвер
@@ -133,7 +147,9 @@ sudo ./mt7902.sh remove       # удаление настроек/автозаг
 Makefile:
 
 ```bash
-make quick-install    # через mt7902.sh install
+make test             # smoke-тесты (сначала)
+make test-hw          # проверка на железе после установки
+make quick-install    # через mt7902.sh install-all
 sudo make install     # сборка/установка Wi‑Fi
 sudo make bluetooth   # сборка/установка Bluetooth
 make check-status

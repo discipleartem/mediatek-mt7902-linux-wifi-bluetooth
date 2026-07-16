@@ -53,6 +53,18 @@ cat /sys/class/dmi/id/sys_vendor /sys/class/dmi/id/product_name
 
 Репозиторий драйверов: [hmtheboy154/mt7902](https://github.com/hmtheboy154/mt7902).
 
+## Тесты (сначала)
+
+Перед установкой или правками в репозитории:
+
+```bash
+./tests/run-tests.sh
+# или
+make test
+```
+
+Тесты не требуют root и железа. После установки: `make test-hw` / `./mt7902.sh verify`.
+
 ## Быстрый старт
 
 ```bash
@@ -204,6 +216,14 @@ ShutdownWatchdogSec=1min
 
 ## Установка и команды
 
+### Тесты (запускать первыми)
+
+```bash
+./tests/run-tests.sh   # smoke-тесты репозитория
+make test              # то же
+make test-hw           # после установки на железе
+```
+
 ### Скрипт `mt7902.sh`
 
 ```bash
@@ -223,6 +243,8 @@ sudo ./mt7902.sh remove
 ### Makefile
 
 ```bash
+make test
+make test-hw
 make quick-install
 sudo make install
 sudo make bluetooth
@@ -282,6 +304,7 @@ sudo dkms install -m btusb_mt7902 -v git --force
 FIX-MediaTek-MT7902-MT7921-MT7961-WIFI/
 ├── mt7902.sh           # Установка Wi‑Fi / BT / system / патчи
 ├── Makefile
+├── tests/run-tests.sh  # Smoke-тесты (запускать первыми)
 ├── gen4-mt7902/        # Wi‑Fi (mt7902e)
 ├── btusb_mt7902/       # Bluetooth (btusb_mt7902)
 ├── patches/            # Патчи PCI ID для отправки в ядро
@@ -294,6 +317,7 @@ FIX-MediaTek-MT7902-MT7921-MT7961-WIFI/
 ## Готово
 
 ```bash
+./tests/run-tests.sh
 sudo ./mt7902.sh install-all
 sudo reboot
 ```
