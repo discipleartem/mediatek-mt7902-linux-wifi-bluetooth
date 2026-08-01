@@ -16,9 +16,11 @@ Primary reference: **Ubuntu 24.04** (Acer Aspire A315-59, MediaTek MT7902 PCI `1
    # or: make test
    ```
 
+   CI (`.github/workflows/ci.yml`) runs the same plus `bash -n` and shellcheck on every PR.
+
 2. Keep symptom keywords and PCI/USB IDs in sync across `README.md`, `README.ru.md`, `llms.txt`, `llms-full.txt`, and `AGENTS.md`. Hardware / install / FAQ details belong in `docs/` and must stay mirrored in `docs/ru/`.
 
-3. Prefer updating `mt7902.sh` over duplicating install logic in docs. README stays a short fix path; details live in `docs/installation.md` / `docs/faq.md` / `docs/supported-hardware.md`.
+3. Prefer updating `mt7902.sh` / `lib/*.sh` over duplicating install logic in docs. README stays a short fix path; details live in `docs/installation.md` / `docs/faq.md` / `docs/supported-hardware.md`.
 
 4. Do **not** vendor `gen4-mt7902/` or `btusb_mt7902/` unless intentional (they are gitignored clones from [hmtheboy154/mt7902](https://github.com/hmtheboy154/mt7902)).
 

@@ -24,7 +24,7 @@ If `lspci` shows **`14c3:7902`**, this repository applies — even if your lapto
 | MT7921 / MT7922 | `14c3:7921`, `14c3:7922`, … | stock `mt7921e` |
 | MT7961 | `14c3:7961` | stock `mt7921e` |
 
-Do **not** treat this pack as a general MT7921/MT7961 installer. Historical PCI-ID patches under `patches/` are not the preferred MT7902 fix.
+Do **not** treat this pack as a general MT7921/MT7961 installer. A historical PCI-ID patch lives under [`archive/mt7921-pci-id/`](../archive/mt7921-pci-id/) — not the preferred MT7902 fix (use `mt7902e`).
 
 ## Laptops (community)
 

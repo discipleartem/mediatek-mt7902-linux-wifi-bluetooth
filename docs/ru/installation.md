@@ -142,13 +142,16 @@ sudo ./mt7902.sh driver       # только Wi‑Fi
 sudo ./mt7902.sh bluetooth    # только Bluetooth
 sudo ./mt7902.sh system       # только systemd
 ./mt7902.sh verify
-./mt7902.sh status
+./mt7902.sh status            # alias verify
 sudo ./mt7902.sh rollback     # восстановить настройки до установки
 ./mt7902.sh diagnose
 sudo ./mt7902.sh remove
-./mt7902.sh patch             # подготовка патча ядра (нужно дерево ядра)
 ./mt7902.sh help
 ```
+
+Алиасы: `all` → `install-all`, `bt` → `bluetooth`, `restore` → `rollback`.
+
+Структура: тонкий `mt7902.sh` + `lib/*.sh` (Wi‑Fi, Bluetooth, systemd, backup, verify).
 
 ### Makefile
 

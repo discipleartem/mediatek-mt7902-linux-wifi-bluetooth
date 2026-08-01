@@ -62,5 +62,6 @@ Upstream-драйверы: [hmtheboy154/mt7902](https://github.com/hmtheboy154/m
 
 ## Версия
 
+**6.0.0** — модульный installer (`lib/*.sh`), без stub/`patch` CLI, CI, архив PCI-ID патча.  
 **5.1.0** — discoverability (README EN/RU, `docs/`, GitHub topics, release).  
 **5.0** — Wi‑Fi (`mt7902e`) + Bluetooth (`btusb_mt7902`), DKMS, `llms.txt` / `AGENTS.md`.
