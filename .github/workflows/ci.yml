@@ -1,0 +1,36 @@
+name: CI
+
+on:
+  push:
+    branches: [main, dev, "refactor/**", "feat/**", "fix/**"]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install shellcheck
+        run: sudo apt-get update && sudo apt-get install -y shellcheck
+
+      - name: bash -n all shell scripts
+        run: |
+          set -euo pipefail
+          mapfile -t files < <(find . -type f -name '*.sh' \
+            ! -path './gen4-mt7902/*' ! -path './btusb_mt7902/*' ! -path './.git/*')
+          for f in "${files[@]}"; do
+            echo "bash -n $f"
+            bash -n "$f"
+          done
+
+      - name: shellcheck
+        run: |
+          mapfile -t files < <(find . -type f -name '*.sh' \
+            ! -path './gen4-mt7902/*' ! -path './btusb_mt7902/*' ! -path './.git/*')
+          shellcheck -e SC2086,SC2164,SC2181 "${files[@]}"
+
+      - name: make test
+        env:
+          SHELLCHECK_REQUIRED: "1"
+        run: make test
