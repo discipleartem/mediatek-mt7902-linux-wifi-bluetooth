@@ -1,5 +1,13 @@
 # Changelog
 
+## 5.1.0 — 2026-08-01
+
+- README.md (English) + README.ru.md with user-search keywords and Q&A sections
+- docs/: installation.md, supported-hardware.md, faq.md + SVG images
+- CONTRIBUTING.md — bug reports / PRs welcome; tested on Ubuntu 24.04
+- GitHub Topics/About updated for SEO (`driver`, `kernel`, `pcie`, `mtk`, …)
+- First GitHub Release tag `v5.1.0`
+
 ## 5.1 — 2026-07-16
 
 - Репозиторий переименован: `mediatek-mt7902-linux-wifi-bluetooth` (старый URL редиректит)

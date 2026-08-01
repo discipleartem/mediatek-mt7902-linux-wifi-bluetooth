@@ -30,8 +30,16 @@ MediaTek MT7902 (Filogic 310) combo wireless card on many Acer notebooks has no 
 Acer Aspire A315-59 (verified), A314-23P, A314-35, A315-24P, A114-33; Acer Extensa 215-23, 215-55; any PC with PCI ID 14c3:7902.
 
 ### Search / query phrases this repo answers
+- MT7902 Linux
+- MediaTek MT7902 Ubuntu
+- MT7902 WiFi driver
+- MT7902 Bluetooth Linux
+- WiFi not working
+- Bluetooth missing
+- Ubuntu 24.04 MediaTek WiFi
 - MT7902 linux driver
 - MediaTek 14c3:7902 wifi not working
+- PCI ID 14c3:7902
 - Acer Aspire WiFi not working Linux MT7902
 - Acer A315-59 wifi linux
 - mt7902e install Ubuntu
@@ -94,7 +102,9 @@ bluetoothctl show            # expect Manufacturer MediaTek, Powered yes
 
 - tests/run-tests.sh — safety tests; run before install (`make test`) so the patch does not harm users
 - mt7902.sh — install / bluetooth / diagnose / remove / verify / rollback
-- GUIDE_RU.md / GUIDE_EN.md — human docs
+- README.md / README.ru.md — EN/RU landings with user-search keywords
+- docs/installation.md, docs/supported-hardware.md, docs/faq.md — indexed short docs
+- GUIDE_RU.md / GUIDE_EN.md — full human docs
 - AGENTS.md — coding-agent instructions
 - llms.txt — short index (start here)
 - patches/ — upstream-oriented PCI-ID patches + BT notes

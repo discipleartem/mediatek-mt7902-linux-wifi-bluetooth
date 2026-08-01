@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="320" viewBox="0 0 1280 320" role="img" aria-labelledby="title desc">
+  <title id="title">MediaTek MT7902 Linux Driver</title>
+  <desc id="desc">Banner for MediaTek MT7902 Linux WiFi and Bluetooth driver</desc>
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0f2744"/>
+      <stop offset="55%" stop-color="#163a5f"/>
+      <stop offset="100%" stop-color="#1a4d6d"/>
+    </linearGradient>
+    <linearGradient id="accent" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#3ecf8e"/>
+      <stop offset="100%" stop-color="#2bb8d6"/>
+    </linearGradient>
+  </defs>
+  <rect width="1280" height="320" fill="url(#bg)"/>
+  <circle cx="1120" cy="40" r="180" fill="#ffffff" fill-opacity="0.04"/>
+  <circle cx="80" cy="280" r="120" fill="#3ecf8e" fill-opacity="0.08"/>
+  <rect x="64" y="72" width="8" height="176" rx="4" fill="url(#accent)"/>
+  <text x="96" y="120" fill="#ffffff" font-family="DejaVu Sans, Liberation Sans, Arial, sans-serif" font-size="48" font-weight="700">MediaTek MT7902 Linux Driver</text>
+  <text x="96" y="172" fill="#c8e6f0" font-family="DejaVu Sans, Liberation Sans, Arial, sans-serif" font-size="26">WiFi + Bluetooth for Filogic 310 (PCI 14c3:7902)</text>
+  <g font-family="DejaVu Sans, Liberation Sans, Arial, sans-serif" font-size="18" fill="#0f2744">
+    <rect x="96" y="210" width="150" height="36" rx="8" fill="#3ecf8e"/>
+    <text x="171" y="234" text-anchor="middle" font-weight="600">Ubuntu 24.04</text>
+    <rect x="262" y="210" width="120" height="36" rx="8" fill="#2bb8d6"/>
+    <text x="322" y="234" text-anchor="middle" font-weight="600">Kernel 6.x</text>
+    <rect x="398" y="210" width="110" height="36" rx="8" fill="#e8f4f8"/>
+    <text x="453" y="234" text-anchor="middle" font-weight="600">mt7902e</text>
+    <rect x="524" y="210" width="150" height="36" rx="8" fill="#e8f4f8"/>
+    <text x="599" y="234" text-anchor="middle" font-weight="600">btusb_mt7902</text>
+  </g>
+</svg>

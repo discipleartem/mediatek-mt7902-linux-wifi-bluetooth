@@ -1,5 +1,7 @@
 # MediaTek MT7902 WiFi + Bluetooth — Полное руководство
 
+См. также: [docs/installation.md](docs/installation.md) · [docs/supported-hardware.md](docs/supported-hardware.md) · [docs/faq.md](docs/faq.md) · [README.ru.md](README.ru.md)
+
 ## Обзор
 
 Решение для встроенного combo‑адаптера **MediaTek MT7902** (Filogic 310) на Linux: Wi‑Fi (PCIe), Bluetooth (USB), прошивка, автозагрузка и оптимизация выключения системы.

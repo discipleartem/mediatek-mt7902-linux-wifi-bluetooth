@@ -1,5 +1,7 @@
 # MediaTek MT7902 WiFi + Bluetooth — Complete Guide
 
+See also: [docs/installation.md](docs/installation.md) · [docs/supported-hardware.md](docs/supported-hardware.md) · [docs/faq.md](docs/faq.md) · [README.md](README.md)
+
 ## Overview
 
 A Linux fix for the built-in **MediaTek MT7902** (Filogic 310) combo adapter: PCIe Wi‑Fi, USB Bluetooth, firmware, autoload, and shutdown timeout tuning.

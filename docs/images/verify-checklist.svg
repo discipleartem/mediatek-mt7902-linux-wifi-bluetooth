@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="880" height="360" viewBox="0 0 880 360" role="img" aria-labelledby="title desc">
+  <title id="title">MT7902 verify checklist</title>
+  <desc id="desc">Success checks after installing MediaTek MT7902 Linux drivers</desc>
+  <rect width="880" height="360" fill="#0f2744"/>
+  <text x="440" y="42" text-anchor="middle" fill="#ffffff" font-family="DejaVu Sans, Liberation Sans, Arial, sans-serif" font-size="22" font-weight="700">Verify success  MT7902 Linux</text>
+
+  <g font-family="DejaVu Sans Mono, Liberation Mono, monospace" font-size="14">
+    <rect x="48" y="70" width="784" height="56" rx="10" fill="#163a5f"/>
+    <circle cx="84" cy="98" r="14" fill="#3ecf8e"/>
+    <text x="84" y="103" text-anchor="middle" fill="#0f2744" font-size="16" font-weight="700"></text>
+    <text x="116" y="92" fill="#c8e6f0">lsmod | grep mt7902e</text>
+    <text x="116" y="114" fill="#3ecf8e">’ mt7902e loaded</text>
+
+    <rect x="48" y="140" width="784" height="56" rx="10" fill="#163a5f"/>
+    <circle cx="84" cy="168" r="14" fill="#3ecf8e"/>
+    <text x="84" y="173" text-anchor="middle" fill="#0f2744" font-size="16" font-weight="700"></text>
+    <text x="116" y="162" fill="#c8e6f0">lspci -nnk & 14c3:7902</text>
+    <text x="116" y="184" fill="#3ecf8e">’ Kernel driver in use: mt7902e</text>
+
+    <rect x="48" y="210" width="784" height="56" rx="10" fill="#163a5f"/>
+    <circle cx="84" cy="238" r="14" fill="#3ecf8e"/>
+    <text x="84" y="243" text-anchor="middle" fill="#0f2744" font-size="16" font-weight="700"></text>
+    <text x="116" y="232" fill="#c8e6f0">lsmod | grep btusb_mt7902 · bluetoothctl show</text>
+    <text x="116" y="254" fill="#3ecf8e">’ MediaTek controller, Powered: yes</text>
+
+    <rect x="48" y="280" width="784" height="50" rx="10" fill="#1a4d6d"/>
+    <text x="440" y="311" text-anchor="middle" fill="#e8f4f8" font-family="DejaVu Sans, Liberation Sans, Arial, sans-serif" font-size="15">WiFi not working / Bluetooth missing ’ fixed after install-all + reboot</text>
+  </g>
+</svg>

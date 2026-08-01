@@ -22,17 +22,22 @@ Former name (GitHub redirects): `discipleartem/FIX-MediaTek-MT7902-MT7921-MT7961
 - USB combo often `13d3:3594` (IMC Networks Wireless_Device)
 - Laptops: Acer Aspire A315-59, A314-23P, A314-35, A315-24P, A114-33; Extensa 215-23, 215-55
 - Kernels **6.6–6.19** (Ubuntu 24.04 HWE, Mint, Fedora, Pop!_OS, Kali) before native MT7902 in Linux **7.1+**
-- Search phrases: `MT7902 linux driver`, `14c3:7902`, `mt7902e`, `btusb_mt7902`, `Filogic 310 wifi linux`, `Opcode 0x0c03 failed -110`, `AzureWave 1a3b:5524`
+- Search phrases: `MT7902 Linux`, `MediaTek MT7902 Ubuntu`, `MT7902 WiFi driver`, `MT7902 Bluetooth Linux`, `WiFi not working`, `Bluetooth missing`, `14c3:7902`, `mt7902e`, `btusb_mt7902`, `Filogic 310 wifi linux`, `Opcode 0x0c03 failed -110`, `AzureWave 1a3b:5524`
 
 Modules/firmware: Wi‑Fi `mt7902e` + `WIFI_MT7902_*`; Bluetooth `btusb_mt7902` + `BT_RAM_CODE_MT7902_*`.
 
 ## Docs
 
-- [README.md](https://github.com/discipleartem/mediatek-mt7902-linux-wifi-bluetooth/blob/main/README.md): overview, hardware table, quick start
+- [README.md](https://github.com/discipleartem/mediatek-mt7902-linux-wifi-bluetooth/blob/main/README.md): English landing — What is MT7902, why unsupported, install, kernels, distros, limitations, FAQ
+- [README.ru.md](https://github.com/discipleartem/mediatek-mt7902-linux-wifi-bluetooth/blob/main/README.ru.md): Russian landing
+- [docs/installation.md](https://github.com/discipleartem/mediatek-mt7902-linux-wifi-bluetooth/blob/main/docs/installation.md): step-by-step install / verify / rollback
+- [docs/supported-hardware.md](https://github.com/discipleartem/mediatek-mt7902-linux-wifi-bluetooth/blob/main/docs/supported-hardware.md): PCI/USB IDs and Acer models
+- [docs/faq.md](https://github.com/discipleartem/mediatek-mt7902-linux-wifi-bluetooth/blob/main/docs/faq.md): WiFi not working / Bluetooth missing FAQ
 - [llms-full.txt](https://github.com/discipleartem/mediatek-mt7902-linux-wifi-bluetooth/blob/main/llms-full.txt): dense symptoms + solution for retrieval (prefer when diagnosing)
 - [AGENTS.md](https://github.com/discipleartem/mediatek-mt7902-linux-wifi-bluetooth/blob/main/AGENTS.md): coding-agent workflow (tests → install → verify → rollback)
 - [GUIDE_EN.md](https://github.com/discipleartem/mediatek-mt7902-linux-wifi-bluetooth/blob/main/GUIDE_EN.md): full English install / troubleshoot
 - [GUIDE_RU.md](https://github.com/discipleartem/mediatek-mt7902-linux-wifi-bluetooth/blob/main/GUIDE_RU.md): full Russian guide (Wi‑Fi + Bluetooth)
+- [CONTRIBUTING.md](https://github.com/discipleartem/mediatek-mt7902-linux-wifi-bluetooth/blob/main/CONTRIBUTING.md): bug reports and PRs
 - [patches/README.md](https://github.com/discipleartem/mediatek-mt7902-linux-wifi-bluetooth/blob/main/patches/README.md): patch / BT notes (historical MT7921 ID patches ≠ preferred fix)
 - [tests/run-tests.sh](https://github.com/discipleartem/mediatek-mt7902-linux-wifi-bluetooth/blob/main/tests/run-tests.sh): safety tests — run before install (`make test`)
 - [CHANGELOG.md](https://github.com/discipleartem/mediatek-mt7902-linux-wifi-bluetooth/blob/main/CHANGELOG.md): version history
