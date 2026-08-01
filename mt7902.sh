@@ -1,10 +1,9 @@
 #!/bin/bash
 
 # MediaTek MT7902 WiFi + Bluetooth — универсальный скрипт
-# Версия: 5.0
-# Дата: 16 июля 2026
+# Версия: 6.0.0
 
-set -e
+set -euo pipefail
 
 RED='\033[0;31m'
 GREEN='\033[0;32m'
@@ -364,8 +363,10 @@ create_pre_install_backup() {
 
 wifi_seems_up() {
     lsmod | grep -q "$WIFI_MOD" || return 1
-    ip -br link 2>/dev/null | grep -qiE 'wlan|wlp' && return 0
-    # Module loaded is enough pre-reboot; iface may appear after NM settles
+    # Prefer a wireless iface; module alone is enough pre-reboot (NM may settle later)
+    if ip -br link 2>/dev/null | grep -qiE 'wlan|wlp'; then
+        return 0
+    fi
     return 0
 }
 
@@ -534,76 +535,6 @@ remove_installation() {
     print_success "Конфигурация удалена (модули .ko в /lib/modules можно убрать через make uninstall в gen4-mt7902 / btusb_mt7902)"
 }
 
-# ===== PATCH HELPERS (unchanged logic for kernel tree) =====
-
-print_patch_header() {
-    echo -e "${BLUE}"
-    echo "📤 Подготовка патча для отправки в ядро Linux"
-    echo "=========================================="
-    echo -e "${NC}"
-}
-
-check_patch_environment() {
-    print_info "1. Проверка окружения для патчей..."
-    command -v git &>/dev/null || { print_error "Git не установлен"; exit 1; }
-    if [[ ! -f "MAINTAINERS" ]] || [[ ! -d "drivers/net/wireless/mediatek/mt76" ]]; then
-        print_error "Не в дереве исходников ядра Linux"
-        exit 1
-    fi
-    print_success "Окружение для патчей проверено"
-}
-
-check_patches() {
-    print_info "2. Проверка патчей..."
-    PATCHES_DIR=""
-    if [[ -f "patches/0001-net-wireless-mediatek-mt76-mt7921-Add-support-for-PCI-ID-7902.patch" ]]; then
-        PATCHES_DIR="patches"
-    elif [[ -f "0001-net-wireless-mediatek-mt76-mt7921-Add-support-for-PCI-ID-7902.patch" ]]; then
-        PATCHES_DIR="."
-    else
-        print_error "Патч не найден"; exit 1
-    fi
-    scripts/checkpatch.pl "$PATCHES_DIR/0001-net-wireless-mediatek-mt76-mt7921-Add-support-for-PCI-ID-7902.patch" || {
-        print_error "Патч не прошел checkpatch.pl"; exit 1
-    }
-    print_success "Формат патча корректен"
-}
-
-get_maintainers() {
-    print_info "3. Получение списка мейнтейнеров..."
-    MAINTAINERS=$(scripts/get_maintainer.pl "$PATCHES_DIR/0001-net-wireless-mediatek-mt76-mt7921-Add-support-for-PCI-ID-7902.patch")
-    echo "$MAINTAINERS"
-    TO_EMAIL=$(echo "$MAINTAINERS" | grep -E '<.*@.*>' | head -5 | tr '\n' ' ')
-    CC_LIST=$(echo "$MAINTAINERS" | grep -E '<.*@.*>' | tail -n +6 | tr '\n' ' ')
-    print_success "Список мейнтейнеров получен"
-}
-
-create_submission_command() {
-    print_info "4. Создание команды отправки..."
-    echo ""
-    echo "git send-email --to=\"$TO_EMAIL\" --cc=\"$CC_LIST\" \\"
-    echo "  --cc-cmd='scripts/get_maintainer.pl --norolestats $PATCHES_DIR/0001-*.patch' \\"
-    echo "  --subject-prefix='PATCH net-next' \\"
-    echo "  $PATCHES_DIR/0001-net-wireless-mediatek-mt76-mt7921-Add-support-for-PCI-ID-7902.patch"
-    echo ""
-}
-
-create_project_patch() {
-    print_info "Создание полного патча проекта..."
-    mkdir -p patches
-    cat > patches/MT7902-complete-fix.patch << 'EOF'
-From: MediaTek MT7902 WiFi Project <maintainer@example.com>
-Subject: [PATCH] Complete MediaTek MT7902 WiFi fix with system optimizations
-
-See project README / docs/installation.md for out-of-tree mt7902e + btusb_mt7902 installation.
-For in-tree, prefer MediaTek upstream MT7902 series (Linux 7.1+).
-
-BugLink: https://github.com/discipleartem/mediatek-mt7902-linux-wifi-bluetooth
-Signed-off-by: MediaTek MT7902 WiFi Project <maintainer@example.com>
-EOF
-    print_success "Заглушка патча: patches/MT7902-complete-fix.patch"
-}
-
 full_install() {
     print_header
     check_root
@@ -690,16 +621,6 @@ install_only_system() {
     print_info "↩️  Откат: sudo $0 rollback"
 }
 
-prepare_patches() {
-    print_patch_header
-    check_patch_environment
-    check_patches
-    get_maintainers
-    create_submission_command
-    create_project_patch
-    print_success "Подготовка патчей завершена!"
-}
-
 show_instructions() {
     echo ""
     print_success "Установка Wi‑Fi завершена!"
@@ -736,13 +657,11 @@ show_help() {
     echo "  rollback     Откат к настройкам до установки (если нет Wi‑Fi/BT)"
     echo "  remove       Удаление конфигурации (через бэкап, если есть)"
     echo ""
-    echo "📤 Патчи:"
-    echo "  patch        Подготовка патчей для ядра"
-    echo "  patch-check  Проверка формата патчей"
-    echo ""
     echo "🔍 Диагностика:"
-    echo "  status       Статус"
+    echo "  status       Статус (alias: verify)"
     echo "  diagnose     Полная диагностика"
+    echo ""
+    echo "Алиасы: all→install-all, bt→bluetooth, restore→rollback"
     echo ""
     echo "Примеры:"
     echo "  sudo $0 install-all"
@@ -803,12 +722,6 @@ case "${1:-help}" in
         print_header
         check_root
         remove_installation
-        ;;
-    patch) prepare_patches ;;
-    patch-check)
-        print_patch_header
-        check_patch_environment
-        check_patches
         ;;
     diagnose) run_diagnose ;;
     help|--help|-h) show_help ;;
