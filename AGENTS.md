@@ -61,7 +61,7 @@ Driver trees are **auto-cloned** if missing (`gen4-mt7902` ← backport, `btusb_
 
 ## Do not
 
-- Do not treat `mt7921e_simple_patch.c` as a real driver (legacy stub).
+- Do not treat archived PCI-ID patches under `archive/mt7921-pci-id/` as the install path — use `mt7902e`.
 - Do not only add PCI ID `7902` to in-tree `mt7921e` and expect full MT7902 support — use `mt7902e`.
 - Do not leave stock `btusb`/`btmtk` loaded alongside `btusb_mt7902` (blacklist required).
 - Do not force Secure Boot unsigned modules without informing the user.
@@ -93,13 +93,16 @@ bluetoothctl show             → Manufacturer MediaTek, Powered: yes
 | `docs/faq.md` | User-search FAQ (SoT) |
 | `docs/ru/` | Russian mirrors of installation / hardware / FAQ |
 | `CONTRIBUTING.md` | Bug reports / PRs |
-| `patches/README.md` | Patch / BT notes |
+| `patches/README.md` | Redirect — historical patches in `archive/` |
+| `archive/mt7921-pci-id/` | Historical PCI-ID patch (not for install) |
+| `lib/` | Installer modules sourced by `mt7902.sh` |
 | `tests/run-tests.sh` | Safety tests — run before install/edits so the pack does not harm users |
+| `.github/workflows/ci.yml` | CI: bash -n, shellcheck, `make test` |
 | `mt7902.sh` | Only installer entrypoint you should run |
 
 ## When editing this repo
 
 - Run `./tests/run-tests.sh` (or `make test`) **first**. Goal: the driver patch/installer must not harm user systems (scoped blacklist, warnings, uninstall path).
 - Keep symptom keywords and PCI/USB IDs in README / llms*.txt in sync.
-- Prefer updating `mt7902.sh` over duplicating install logic in docs.
+- Prefer updating `mt7902.sh` / `lib/*.sh` over duplicating install logic in docs.
 - Driver sources under `gen4-mt7902/` and `btusb_mt7902/` are gitignored clones — do not vendor unless intentional.

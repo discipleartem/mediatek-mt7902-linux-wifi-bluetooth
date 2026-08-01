@@ -1,5 +1,17 @@
 # Changelog
 
+## 6.0.0 — 2026-08-01
+
+Breaking cleanup of the install pack:
+
+- Removed legacy stub `mt7921e_simple_patch.c`; `make` / `all` defaults to `help`
+- Removed `patch` / `patch-check` CLI (did not work from this repo)
+- Historical PCI-ID patch moved to `archive/mt7921-pci-id/`; broken duplicate patches deleted
+- Installer split: thin `mt7902.sh` + `lib/*.sh`, unified `run_install`
+- Tests split into harness + sections; GitHub Actions CI (`bash -n`, shellcheck, `make test`)
+- Makefile is a thin wrapper around `mt7902.sh`
+- Docs synced (aliases documented; no stub/patch install path)
+
 ## Unreleased
 
 - Docs refactor: removed `GUIDE_EN.md` / `GUIDE_RU.md`; how-to SoT in `docs/` with Russian mirrors in `docs/ru/`
@@ -7,7 +19,7 @@
 
 ## 5.1.0 — 2026-08-01
 
-- README.md (English) + README.ru.md with user-search keywords and Q&A sections
+- README.md (English) + README.ru.md with user-search keywords
 - docs/: installation.md, supported-hardware.md, faq.md + SVG images
 - CONTRIBUTING.md — bug reports / PRs welcome; tested on Ubuntu 24.04
 - GitHub Topics/About updated for SEO (`driver`, `kernel`, `pcie`, `mtk`, …)

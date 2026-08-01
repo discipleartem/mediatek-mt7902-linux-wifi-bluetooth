@@ -96,18 +96,19 @@ bluetoothctl show            # expect Manufacturer MediaTek, Powered yes
 ## Related chips (do not oversell)
 
 - MT7921 / MT7922 / MT7961 often work with in-tree `mt7921e` already.
-- This project's **primary** target is MT7902. Historical patches adding `0x7902` to mt7921 exist under `patches/` but dedicated `mt7902e` is the correct practical fix.
+- This project's **primary** target is MT7902. A historical patch adding `0x7902` to mt7921 lives under `archive/mt7921-pci-id/` but dedicated `mt7902e` is the correct practical fix.
 
 ## Key files
 
-- tests/run-tests.sh — safety tests; run before install (`make test`) so the patch does not harm users
-- mt7902.sh — install / bluetooth / diagnose / remove / verify / rollback
+- tests/run-tests.sh — safety tests; run before install (`make test`) so the pack does not harm users
+- mt7902.sh + lib/*.sh — install / bluetooth / diagnose / remove / verify / rollback
 - README.md / README.ru.md — EN/RU landings (short fix path)
 - docs/installation.md, docs/supported-hardware.md, docs/faq.md — SoT how-to docs
 - docs/ru/ — Russian mirrors of installation / hardware / FAQ
 - AGENTS.md — coding-agent instructions
 - llms.txt — short index (start here)
-- patches/ — upstream-oriented PCI-ID patches + BT notes
+- archive/mt7921-pci-id/ — historical PCI-ID patch (not for day-to-day install)
+- .github/workflows/ci.yml — bash -n, shellcheck, make test
 
 ## Upstream
 

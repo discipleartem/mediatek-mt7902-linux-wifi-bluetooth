@@ -46,11 +46,15 @@ diagnose:
 install:
 	sudo ./mt7902.sh install
 
-bluetooth install-bt:
+bluetooth:
 	sudo ./mt7902.sh bluetooth
 
-quick-install install-all:
+install-bt: bluetooth
+
+install-all:
 	sudo ./mt7902.sh install-all
+
+quick-install: install-all
 
 clean:
 	@echo "Cleaning driver trees (if cloned)..."

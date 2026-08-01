@@ -62,7 +62,7 @@ while IFS= read -r f; do
 done < <(all_shell_scripts)
 
 if [[ -n "$SHELLCHECK" ]]; then
-    if "$SHELLCHECK" -e SC2086,SC2164,SC2181 "${SC_FILES[@]}"; then
+    if "$SHELLCHECK" -e SC2086,SC2164,SC2181,SC2034,SC1091 "${SC_FILES[@]}"; then
         ok "shellcheck installer + tests"
     else
         fail "shellcheck installer + tests"
