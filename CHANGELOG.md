@@ -11,9 +11,6 @@ Breaking cleanup of the install pack:
 - Tests split into harness + sections; GitHub Actions CI (`bash -n`, shellcheck, `make test`)
 - Makefile is a thin wrapper around `mt7902.sh`
 - Docs synced (aliases documented; no stub/patch install path)
-
-## Unreleased
-
 - Docs refactor: removed `GUIDE_EN.md` / `GUIDE_RU.md`; how-to SoT in `docs/` with Russian mirrors in `docs/ru/`
 - README.md / README.ru.md slimmed to a short symptoms → fix path with links to docs
 
