@@ -595,7 +595,7 @@ create_project_patch() {
 From: MediaTek MT7902 WiFi Project <maintainer@example.com>
 Subject: [PATCH] Complete MediaTek MT7902 WiFi fix with system optimizations
 
-See project README / GUIDE for out-of-tree mt7902e + btusb_mt7902 installation.
+See project README / docs/installation.md for out-of-tree mt7902e + btusb_mt7902 installation.
 For in-tree, prefer MediaTek upstream MT7902 series (Linux 7.1+).
 
 BugLink: https://github.com/discipleartem/mediatek-mt7902-linux-wifi-bluetooth
@@ -718,7 +718,7 @@ show_instructions() {
     print_info "↩️  Откат (вернуть исходные настройки):"
     echo "  sudo $0 rollback"
     echo ""
-    print_info "📚 GUIDE_EN.md / GUIDE_RU.md"
+    print_info "📚 docs/installation.md · docs/ru/installation.md · README.md"
 }
 
 show_help() {
@@ -749,7 +749,7 @@ show_help() {
     echo "  sudo $0 rollback"
     echo "  MT7902_AUTO_ROLLBACK=1 sudo $0 install-all   # откат без вопроса при сбое"
     echo ""
-    echo "📚 GUIDE_EN.md / GUIDE_RU.md / README.md"
+    echo "📚 docs/installation.md · docs/ru/installation.md · README.md"
 }
 
 check_status() {

@@ -102,9 +102,9 @@ bluetoothctl show            # expect Manufacturer MediaTek, Powered yes
 
 - tests/run-tests.sh — safety tests; run before install (`make test`) so the patch does not harm users
 - mt7902.sh — install / bluetooth / diagnose / remove / verify / rollback
-- README.md / README.ru.md — EN/RU landings with user-search keywords
-- docs/installation.md, docs/supported-hardware.md, docs/faq.md — indexed short docs
-- GUIDE_RU.md / GUIDE_EN.md — full human docs
+- README.md / README.ru.md — EN/RU landings (short fix path)
+- docs/installation.md, docs/supported-hardware.md, docs/faq.md — SoT how-to docs
+- docs/ru/ — Russian mirrors of installation / hardware / FAQ
 - AGENTS.md — coding-agent instructions
 - llms.txt — short index (start here)
 - patches/ — upstream-oriented PCI-ID patches + BT notes

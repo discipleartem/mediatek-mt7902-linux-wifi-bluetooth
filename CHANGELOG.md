@@ -1,5 +1,10 @@
 # Changelog
 
+## Unreleased
+
+- Docs refactor: removed `GUIDE_EN.md` / `GUIDE_RU.md`; how-to SoT in `docs/` with Russian mirrors in `docs/ru/`
+- README.md / README.ru.md slimmed to a short symptoms → fix path with links to docs
+
 ## 5.1.0 — 2026-08-01
 
 - README.md (English) + README.ru.md with user-search keywords and Q&A sections

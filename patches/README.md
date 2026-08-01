@@ -74,7 +74,7 @@ https://lore.kernel.org/all/20260219004007.19733-1-sean.wang@kernel.org/
 - **Карта:** MediaTek MT7902 Filogic 310, PCI `14c3:7902`, AzureWave `1a3b:5524`
 - **Ноутбуки:** Acer Aspire A315-59 (проверено), A314-23P, A314-35, A315-24P, A114-33; Extensa 215-23 / 215-55 и др. с тем же PCI ID
 
-Подробнее: корневой [README.md](../README.md), [GUIDE_RU.md](../GUIDE_RU.md), [GUIDE_EN.md](../GUIDE_EN.md).
+Подробнее: [README.md](../README.md), [docs/installation.md](../docs/installation.md), [docs/ru/installation.md](../docs/ru/installation.md), [docs/faq.md](../docs/faq.md).
 
 ## Исторический патч mt7921 (PCI ID 7902)
 

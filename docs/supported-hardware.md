@@ -2,7 +2,7 @@
 
 Hardware match for this **MediaTek MT7902 Linux** WiFi / Bluetooth driver pack.
 
-See also: [Installation](installation.md) · [FAQ](faq.md) · [README](../README.md)
+See also: [Installation](installation.md) · [FAQ](faq.md) · [README](../README.md) · [RU](ru/supported-hardware.md)
 
 ![Architecture](images/architecture.svg)
 

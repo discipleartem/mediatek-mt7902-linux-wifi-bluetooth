@@ -83,13 +83,18 @@ echo "1) Required files"
 assert_file "mt7902.sh"
 assert_file "Makefile"
 assert_file "README.md"
-assert_file "GUIDE_RU.md"
-assert_file "GUIDE_EN.md"
+assert_file "README.ru.md"
 assert_file "AGENTS.md"
 assert_file "llms.txt"
 assert_file "llms-full.txt"
 assert_file "LICENSE"
 assert_file "patches/README.md"
+assert_file "docs/installation.md"
+assert_file "docs/supported-hardware.md"
+assert_file "docs/faq.md"
+assert_file "docs/ru/installation.md"
+assert_file "docs/ru/supported-hardware.md"
+assert_file "docs/ru/faq.md"
 echo ""
 
 echo "2) Script permissions & syntax"
@@ -200,17 +205,17 @@ assert_not_contains "does not set TimeoutStop infinity" "mt7902.sh" 'TimeoutStop
 echo ""
 
 echo "6) Docs warn users about side effects"
-for doc in README.md GUIDE_RU.md GUIDE_EN.md AGENTS.md; do
+for doc in README.md README.ru.md docs/faq.md docs/ru/faq.md AGENTS.md; do
     assert_contains "$doc warns about btusb blacklist" "$doc" 'blacklist|блокир'
 done
 assert_contains "README mentions Realtek BT side effect" "README.md" 'Realtek'
 assert_contains "AGENTS.md mentions Secure Boot" "AGENTS.md" 'Secure Boot'
 assert_contains "docs say run tests to protect users / before install" "AGENTS.md" \
     'harm|навред|protect|safety|не навред|before.*install|перед.*установ'
-assert_contains "GUIDE_RU explains script is not a daemon" "GUIDE_RU.md" \
-    'не.*демон|не прописывается в автозагрузку'
-assert_contains "GUIDE_EN explains script is not a daemon" "GUIDE_EN.md" \
+assert_contains "docs/installation.md explains script is not a daemon" "docs/installation.md" \
     'not.*daemon|not.*added to boot'
+assert_contains "docs/ru/installation.md explains script is not a daemon" "docs/ru/installation.md" \
+    'не.*демон|не прописывается в автозагрузку'
 assert_contains "README mentions modules-load autoload" "README.md" 'modules-load\.d'
 echo ""
 
@@ -230,7 +235,9 @@ fi
 echo ""
 
 echo "8) Docs: PCI/USB IDs & entrypoints stay in sync"
-for doc in README.md GUIDE_RU.md GUIDE_EN.md AGENTS.md llms.txt llms-full.txt; do
+for doc in README.md README.ru.md AGENTS.md llms.txt llms-full.txt \
+    docs/installation.md docs/supported-hardware.md docs/faq.md \
+    docs/ru/installation.md docs/ru/supported-hardware.md docs/ru/faq.md; do
     assert_contains "$doc has 14c3:7902" "$doc" '14c3:7902'
 done
 assert_contains "README has mt7902e" "README.md" 'mt7902e'
@@ -238,8 +245,8 @@ assert_contains "README has btusb_mt7902" "README.md" 'btusb_mt7902'
 assert_contains "README has install-all" "README.md" 'install-all'
 assert_contains "AGENTS.md mentions tests" "AGENTS.md" 'tests/run-tests\.sh|make test'
 assert_contains "README mentions tests" "README.md" 'tests/run-tests\.sh|make test'
-assert_contains "GUIDE_RU mentions tests" "GUIDE_RU.md" 'tests/run-tests\.sh|make test'
-assert_contains "GUIDE_EN mentions tests" "GUIDE_EN.md" 'tests/run-tests\.sh|make test'
+assert_contains "docs/installation.md mentions tests" "docs/installation.md" 'tests/run-tests\.sh|make test'
+assert_contains "docs/ru/installation.md mentions tests" "docs/ru/installation.md" 'tests/run-tests\.sh|make test'
 # Agent discoverability: canonical URL + match keywords stay citable
 CANON_URL='mediatek-mt7902-linux-wifi-bluetooth'
 for doc in README.md AGENTS.md llms.txt llms-full.txt; do

@@ -7,11 +7,12 @@ This repository includes machine-oriented entry points so coding agents and LLM 
 | [`llms.txt`](../llms.txt) | Curated index ([llms.txt](https://llmstxt.org/) style) |
 | [`llms-full.txt`](../llms-full.txt) | Dense problem/solution text for retrieval |
 | [`AGENTS.md`](../AGENTS.md) | Workflow for Cursor / Copilot / Claude Code / Codex |
-| [`README.md`](../README.md) | English landing (keywords + Q&A) |
+| [`README.md`](../README.md) | English landing (short fix path) |
 | [`README.ru.md`](../README.ru.md) | Russian landing |
-| [`docs/installation.md`](installation.md) | Install / verify / rollback |
-| [`docs/supported-hardware.md`](supported-hardware.md) | PCI/USB IDs and laptops |
-| [`docs/faq.md`](faq.md) | User search FAQ |
+| [`docs/installation.md`](installation.md) | Install / verify / rollback (SoT) |
+| [`docs/supported-hardware.md`](supported-hardware.md) | PCI/USB IDs and laptops (SoT) |
+| [`docs/faq.md`](faq.md) | User search FAQ (SoT) |
+| [`docs/ru/`](ru/installation.md) | Russian mirrors of the SoT docs |
 
 ## GitHub About + topics
 

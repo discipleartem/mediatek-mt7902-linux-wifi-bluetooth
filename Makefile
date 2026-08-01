@@ -128,4 +128,4 @@ help:
 	@echo "  make check-status"
 	@echo "  make diagnose"
 	@echo ""
-	@echo "Документация: README.md, GUIDE_RU.md, GUIDE_EN.md"
+	@echo "Документация: README.md, docs/installation.md, docs/ru/installation.md"

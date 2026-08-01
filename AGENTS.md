@@ -50,7 +50,7 @@ After hardware install, optional runtime check: `make test-hw` / `make check-sta
 
 **Rollback:** install always saves originals to `/var/lib/mt7902-fix/backup`. If Wi‑Fi/BT do not appear: `sudo ./mt7902.sh rollback` (or answer Yes when prompted after a failed module load). Auto: `MT7902_AUTO_ROLLBACK=1 sudo ./mt7902.sh install-all`.
 
-**Autoload / systemd:** `mt7902.sh` itself is **not** a boot daemon. Install writes `modules-load.d` for `mt7902e` / `btusb_mt7902`, optional blacklist, and enables oneshot shutdown units (`mt7902-driver-shutdown.service`). See GUIDE § autoload.
+**Autoload / systemd:** `mt7902.sh` itself is **not** a boot daemon. Install writes `modules-load.d` for `mt7902e` / `btusb_mt7902`, optional blacklist, and enables oneshot shutdown units (`mt7902-driver-shutdown.service`). See [docs/installation.md](docs/installation.md#autoload).
 Partial:
 
 - Wi‑Fi only: `sudo ./mt7902.sh install`
@@ -86,12 +86,12 @@ bluetoothctl show             → Manufacturer MediaTek, Powered: yes
 |------|-----|
 | `llms.txt` | Short index for agents |
 | `llms-full.txt` | Dense symptoms + solution for retrieval |
-| `README.md` | English landing (SEO keywords + Q&A) |
+| `README.md` | English landing (short fix path) |
 | `README.ru.md` | Russian landing |
-| `docs/installation.md` | Install / verify / rollback |
-| `docs/supported-hardware.md` | PCI/USB IDs and laptops |
-| `docs/faq.md` | User-search FAQ |
-| `GUIDE_RU.md` / `GUIDE_EN.md` | Full install/troubleshoot |
+| `docs/installation.md` | Install / verify / rollback / commands (SoT) |
+| `docs/supported-hardware.md` | PCI/USB IDs and laptops (SoT) |
+| `docs/faq.md` | User-search FAQ (SoT) |
+| `docs/ru/` | Russian mirrors of installation / hardware / FAQ |
 | `CONTRIBUTING.md` | Bug reports / PRs |
 | `patches/README.md` | Patch / BT notes |
 | `tests/run-tests.sh` | Safety tests — run before install/edits so the pack does not harm users |
