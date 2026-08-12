@@ -5,29 +5,29 @@ set -euo pipefail
 REPO="${1:-discipleartem/mediatek-mt7902-linux-wifi-bluetooth}"
 export PATH="${HOME}/.local/bin:${PATH}"
 
-# Front-load chip ID + modules + the BT error agents/users paste from dmesg.
-DESC='Linux fix for MediaTek MT7902 / Filogic 310 (PCI 14c3:7902, AzureWave 1a3b:5524): mt7902e + btusb_mt7902. Fixes unclaimed WiFi and Bluetooth Opcode 0x0c03 failed -110 / zero BD address on Acer Aspire/Extensa.'
+# Front-load chip ID + user search phrases (WiFi not working / Ubuntu).
+DESC='MediaTek MT7902 Linux WiFi and Bluetooth driver (PCI 14c3:7902). Fix WiFi not working / Bluetooth missing on Ubuntu 24.04+. mt7902e + btusb_mt7902.'
 
 TOPICS=(
   mt7902
   mediatek
-  filogic-310
-  filogic
+  linux
   wifi
   bluetooth
-  linux-driver
-  linux
   ubuntu
-  linux-mint
+  driver
+  kernel
+  wireless
+  pcie
+  mtk
+  linux-driver
+  filogic-310
+  mt7902e
+  dkms
   fedora
   acer
   acer-aspire
-  mt7902e
-  btusb
-  dkms
-  out-of-tree
-  wireless
-  networking
+  filogic
 )
 
 # Topics that are typos or dilute the primary chip signal — remove if present.
@@ -35,6 +35,10 @@ REMOVE_TOPICS=(
   filogic-310-
   mt7921
   mt7961
+  out-of-tree
+  networking
+  linux-mint
+  btusb
 )
 
 echo "Updating description for $REPO ..."

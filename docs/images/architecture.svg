@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="960" height="420" viewBox="0 0 960 420" role="img" aria-labelledby="title desc">
+  <title id="title">MT7902 architecture</title>
+  <desc id="desc">PCIe WiFi and USB Bluetooth paths for MediaTek MT7902</desc>
+  <rect width="960" height="420" fill="#f7fafc"/>
+  <text x="480" y="36" text-anchor="middle" fill="#0f2744" font-family="DejaVu Sans, Liberation Sans, Arial, sans-serif" font-size="22" font-weight="700">MediaTek MT7902 (Filogic 310) on Linux</text>
+
+  <!-- Hardware -->
+  <rect x="40" y="70" width="880" height="70" rx="10" fill="#e8eef5" stroke="#9bb0c4"/>
+  <text x="480" y="100" text-anchor="middle" fill="#0f2744" font-family="DejaVu Sans, Liberation Sans, Arial, sans-serif" font-size="16" font-weight="600">Hardware combo module</text>
+  <text x="480" y="124" text-anchor="middle" fill="#345" font-family="DejaVu Sans, Liberation Sans, Arial, sans-serif" font-size="14">AzureWave 1a3b:5524 · WiFi PCIe 14c3:7902 · BT USB often 13d3:3594</text>
+
+  <!-- WiFi path -->
+  <rect x="60" y="180" width="380" height="200" rx="12" fill="#ffffff" stroke="#3ecf8e" stroke-width="2"/>
+  <text x="250" y="210" text-anchor="middle" fill="#1a7a52" font-family="DejaVu Sans, Liberation Sans, Arial, sans-serif" font-size="18" font-weight="700">WiFi path</text>
+  <rect x="100" y="230" width="300" height="40" rx="8" fill="#e8f8f0"/>
+  <text x="250" y="256" text-anchor="middle" fill="#0f2744" font-family="DejaVu Sans, Liberation Sans, Arial, sans-serif" font-size="14">PCIe 14c3:7902</text>
+  <path d="M250 270 L250 290" stroke="#3ecf8e" stroke-width="2" marker-end="url(#arrowG)"/>
+  <rect x="100" y="295" width="300" height="40" rx="8" fill="#d7f5e8"/>
+  <text x="250" y="321" text-anchor="middle" fill="#0f2744" font-family="DejaVu Sans, Liberation Sans, Arial, sans-serif" font-size="14" font-weight="600">mt7902e + WIFI_MT7902 firmware</text>
+  <text x="250" y="360" text-anchor="middle" fill="#345" font-family="DejaVu Sans, Liberation Sans, Arial, sans-serif" font-size="13">’ wlan* / wlp* interface</text>
+
+  <!-- BT path -->
+  <rect x="520" y="180" width="380" height="200" rx="12" fill="#ffffff" stroke="#2bb8d6" stroke-width="2"/>
+  <text x="710" y="210" text-anchor="middle" fill="#1a7a9a" font-family="DejaVu Sans, Liberation Sans, Arial, sans-serif" font-size="18" font-weight="700">Bluetooth path</text>
+  <rect x="560" y="230" width="300" height="40" rx="8" fill="#e6f7fb"/>
+  <text x="710" y="256" text-anchor="middle" fill="#0f2744" font-family="DejaVu Sans, Liberation Sans, Arial, sans-serif" font-size="14">USB BT (e.g. 13d3:3594)</text>
+  <path d="M710 270 L710 290" stroke="#2bb8d6" stroke-width="2"/>
+  <rect x="560" y="295" width="300" height="40" rx="8" fill="#d4f0f8"/>
+  <text x="710" y="321" text-anchor="middle" fill="#0f2744" font-family="DejaVu Sans, Liberation Sans, Arial, sans-serif" font-size="14" font-weight="600">btusb_mt7902 + BT_RAM_CODE</text>
+  <text x="710" y="360" text-anchor="middle" fill="#345" font-family="DejaVu Sans, Liberation Sans, Arial, sans-serif" font-size="13">’ hci* (MediaTek, Powered yes)</text>
+</svg>

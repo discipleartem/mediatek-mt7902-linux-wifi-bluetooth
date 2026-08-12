@@ -1,10 +1,32 @@
 # Changelog
 
-## 5.2 — 2026-08-12
+## 6.0.1 — 2026-08-12
 
-- Проверено: Acer Aspire A315-59, Ubuntu 24.04.4, ядро **7.0.0-28-generic** (Wi‑Fi `wlp42s0` + BT Powered)
-- Диапазон backport: **6.6–7.0** (mainline MT7902 по-прежнему ожидается в 7.1+)
-- `diagnose`: логи только MediaTek/mt7902 (не gnome/livepatch `-p err`), плюс NM и краткий итог
+- Verified: Acer Aspire A315-59, Ubuntu 24.04.4, kernel **7.0.0-28-generic**
+- Backport range documented as **6.6–7.0** (mainline still expected in 7.1+)
+- `diagnose`: MediaTek/mt7902 logs only (not unrelated `journalctl -p err`), plus NM and a short verdict
+
+## 6.0.0 — 2026-08-01
+
+Breaking cleanup of the install pack:
+
+- Removed legacy stub `mt7921e_simple_patch.c`; `make` / `all` defaults to `help`
+- Removed `patch` / `patch-check` CLI (did not work from this repo)
+- Historical PCI-ID patch moved to `archive/mt7921-pci-id/`; broken duplicate patches deleted
+- Installer split: thin `mt7902.sh` + `lib/*.sh`, unified `run_install`
+- Tests split into harness + sections; GitHub Actions CI (`bash -n`, shellcheck, `make test`)
+- Makefile is a thin wrapper around `mt7902.sh`
+- Docs synced (aliases documented; no stub/patch install path)
+- Docs refactor: removed `GUIDE_EN.md` / `GUIDE_RU.md`; how-to SoT in `docs/` with Russian mirrors in `docs/ru/`
+- README.md / README.ru.md slimmed to a short symptoms → fix path with links to docs
+
+## 5.1.0 — 2026-08-01
+
+- README.md (English) + README.ru.md with user-search keywords
+- docs/: installation.md, supported-hardware.md, faq.md + SVG images
+- CONTRIBUTING.md — bug reports / PRs welcome; tested on Ubuntu 24.04
+- GitHub Topics/About updated for SEO (`driver`, `kernel`, `pcie`, `mtk`, …)
+- First GitHub Release tag `v5.1.0`
 
 ## 5.1 — 2026-07-16
 
@@ -23,7 +45,7 @@
 - Откат: бэкап в `/var/lib/mt7902-fix/backup`, команда `sudo ./mt7902.sh rollback` если Wi‑Fi/BT не появились
 - Документация: уточнено, что `mt7902.sh` не демон; автозагрузка — модули (`modules-load.d`) и oneshot systemd на shutdown
 - AI discoverability: `llms.txt`, `llms-full.txt`, `AGENTS.md`, симптомы/PCI ID в README
-- Проверено: Acer Aspire A315-59, Ubuntu 24.04, ядро 6.17 (стенд обновлён до 7.0 в 5.2)
+- Проверено: Acer Aspire A315-59, Ubuntu 24.04, ядро 6.17
 
 ## 4.0 — 2026-02-25
 
