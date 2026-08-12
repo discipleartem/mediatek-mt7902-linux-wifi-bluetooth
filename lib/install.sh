@@ -81,6 +81,10 @@ run_install() {
         prompt_rollback_if_failed "$want_wifi" "$want_bt" || true
     fi
 
+    if [[ "$want_system" == "1" ]]; then
+        systemctl start mt7902-watchdog.service 2>/dev/null || true
+    fi
+
     if [[ "$want_wifi" == "1" && "$want_bt" == "1" && "$want_system" == "1" ]]; then
         echo ""
         print_success "Полная установка Wi‑Fi + Bluetooth завершена!"

@@ -58,8 +58,9 @@ Acer Aspire A315-59 (verified), A314-23P, A314-35, A315-24P, A114-33; Acer Exten
 4. Installs BT firmware: `mediatek/BT_RAM_CODE_MT7902_1_1_hdr.bin`
 5. Blacklists conflicting stock modules: `btusb`, `btmtk`
 6. Sets modules-load.d autoload for `mt7902e` / `btusb_mt7902` + optional DKMS + systemd shutdown timeout fixes and oneshot unload units
-7. Does **not** install `mt7902.sh` itself as a boot daemon — the script is only a manual installer/rollback tool
-8. Saves pre-install config backup under `/var/lib/mt7902-fix/backup` for `rollback` if Wi‑Fi/BT fail
+7. Does **not** install `mt7902.sh` itself as a boot daemon — the script is only a manual installer/rollback/watchdog tool
+8. Enables `mt7902-watchdog.service` to **reload** `mt7902e` / `btusb_mt7902` if they drop (not a full reinstall; skips if radio is intentionally off)
+9. Saves pre-install config backup under `/var/lib/mt7902-fix/backup` for `rollback` if Wi‑Fi/BT fail
 
 Primary installer: `./mt7902.sh install-all`
 
@@ -90,8 +91,9 @@ bluetoothctl show            # expect Manufacturer MediaTek, Powered yes
 5. For Bluetooth-only: `sudo ./mt7902.sh bluetooth` (warn: blacklists stock btusb — Realtek USB BT dies; Realtek USB WiFi rtw88 OK).
 6. After install, reboot; interface may be `wlpXsY` not `wlan0`.
 7. If Wi‑Fi/BT still missing: `sudo ./mt7902.sh rollback` restores pre-install configs from `/var/lib/mt7902-fix/backup`.
-8. Dual-boot: disable Windows Fast Startup if card fails to init.
-9. Kernel 7.1+: check whether in-tree MT7902 already works before installing out-of-tree.
+8. If they drop later: `sudo ./mt7902.sh watchdog` (reload modules only). Stop: `sudo ./mt7902.sh watchdog-stop`.
+9. Dual-boot: disable Windows Fast Startup if card fails to init.
+10. Kernel 7.1+: check whether in-tree MT7902 already works before installing out-of-tree.
 
 ## Related chips (do not oversell)
 
@@ -101,7 +103,8 @@ bluetoothctl show            # expect Manufacturer MediaTek, Powered yes
 ## Key files
 
 - tests/run-tests.sh — safety tests; run before install (`make test`) so the pack does not harm users
-- mt7902.sh + lib/*.sh — install / bluetooth / diagnose / remove / verify / rollback
+- mt7902.sh + lib/*.sh — install / bluetooth / diagnose / remove / verify / rollback / watchdog
+- scripts/mt7902-watchdog.sh — reload mt7902e / btusb_mt7902 if they drop
 - README.md / README.ru.md — EN/RU landings (short fix path)
 - docs/installation.md, docs/supported-hardware.md, docs/faq.md — SoT how-to docs
 - docs/ru/ — Russian mirrors of installation / hardware / FAQ

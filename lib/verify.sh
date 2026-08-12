@@ -19,6 +19,13 @@ verify_installation() {
     echo -e "\n⚙️ Сервисы:"
     systemctl is-enabled mt7902-driver-shutdown.service &>/dev/null && echo "  ✅ mt7902-driver-shutdown.service" || echo "  ❌ mt7902-driver-shutdown.service"
     systemctl is-enabled docker-shutdown.service &>/dev/null && echo "  ✅ docker-shutdown.service" || echo "  ⚠️  docker-shutdown.service"
+    if systemctl is-active --quiet mt7902-watchdog.service 2>/dev/null; then
+        echo "  ✅ mt7902-watchdog.service (active)"
+    elif systemctl is-enabled mt7902-watchdog.service &>/dev/null; then
+        echo "  ⚠️  mt7902-watchdog.service enabled, not running"
+    else
+        echo "  ⚠️  mt7902-watchdog.service не включён (sudo $0 watchdog)"
+    fi
 
     echo -e "\n📁 Конфигурации:"
     [[ -f /etc/systemd/system.conf.d/99-timeouts.conf ]] && echo "  ✅ Системные таймауты" || echo "  ❌ Системные таймауты"
@@ -98,6 +105,8 @@ show_help() {
     echo "  verify       Проверка установки"
     echo "  rollback     Откат к настройкам до установки (если нет Wi‑Fi/BT)"
     echo "  remove       Удаление конфигурации (через бэкап, если есть)"
+    echo "  watchdog     Включить фоновый ремонт Wi‑Fi/BT (systemd)"
+    echo "  watchdog-stop Выключить watchdog"
     echo ""
     echo "🔍 Диагностика:"
     echo "  status       Статус (alias: verify)"
@@ -107,6 +116,7 @@ show_help() {
     echo ""
     echo "Примеры:"
     echo "  sudo $0 install-all"
+    echo "  sudo $0 watchdog"
     echo "  sudo $0 rollback"
     echo "  MT7902_AUTO_ROLLBACK=1 sudo $0 install-all   # откат без вопроса при сбое"
     echo ""

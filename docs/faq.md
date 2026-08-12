@@ -77,6 +77,16 @@ Out-of-tree `mt7902e` / `btusb_mt7902` must be allowed:
 
 Unsigned modules will fail to load while Secure Boot is on.
 
+## Wi‑Fi or Bluetooth drops after a while?
+
+`install-all` enables `mt7902-watchdog.service`. It only **reloads** `mt7902e` / `btusb_mt7902` (same as the installer load path) when the module or interface disappears. It does not reinstall and it skips repair if you turned Wi‑Fi/BT off (`rfkill` / `nmcli radio wifi off`).
+
+```bash
+sudo ./mt7902.sh watchdog        # enable + start
+sudo ./mt7902.sh watchdog-stop   # disable
+mt7902-watchdog --check          # status
+```
+
 ## Shutdown hangs after install?
 
 The pack installs systemd timeout overrides and `mt7902-driver-shutdown.service` to unload drivers cleanly. Re-run `sudo ./mt7902.sh system` if those units were skipped. Details: [Installation — autoload](installation.md#autoload). Diagnose with `./mt7902.sh diagnose`.

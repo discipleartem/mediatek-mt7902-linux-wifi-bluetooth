@@ -1,5 +1,12 @@
 # Changelog
 
+## 6.1.0 — 2026-08-12
+
+- `mt7902-watchdog.service`: reloads `mt7902e` / `btusb_mt7902` if Wi‑Fi or Bluetooth drop (not a full reinstall)
+- CLI: `sudo ./mt7902.sh watchdog` / `watchdog-stop`; `mt7902-watchdog --check`
+- Skips repair when radio is intentionally off (`rfkill` / `nmcli radio wifi off`); rate-limited
+- Rollback/remove disables the watchdog; `install-all` enables it
+
 ## 6.0.1 — 2026-08-12
 
 - Verified on Acer Aspire A315-59, Ubuntu 24.04.4 LTS, kernel **7.0.0-28-generic** (`mt7902e` + `wlp42s0`, `btusb_mt7902` Powered)

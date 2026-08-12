@@ -77,6 +77,16 @@ Out-of-tree `mt7902e` / `btusb_mt7902` должны быть разрешены:
 
 Неподписанные модули не загрузятся при включённом Secure Boot.
 
+## Wi‑Fi или Bluetooth пропадают через время?
+
+`install-all` включает `mt7902-watchdog.service`. Он только **перезагружает** `mt7902e` / `btusb_mt7902` (как при установке), если модуль или интерфейс исчезли. Полную переустановку не делает и не трогает радио, если вы сами выключили Wi‑Fi/BT (`rfkill` / `nmcli radio wifi off`).
+
+```bash
+sudo ./mt7902.sh watchdog        # включить и запустить
+sudo ./mt7902.sh watchdog-stop   # выключить
+mt7902-watchdog --check          # статус
+```
+
 ## Зависание при выключении после установки?
 
 Пакет ставит overrides таймаутов systemd и `mt7902-driver-shutdown.service` для корректной выгрузки драйверов. Повторите `sudo ./mt7902.sh system`, если юниты были пропущены. Подробнее: [Установка — autoload](installation.md#autoload). Диагностика: `./mt7902.sh diagnose`.

@@ -61,6 +61,7 @@ Description=Unload ${WIFI_MOD} driver before shutdown
 DefaultDependencies=no
 Before=shutdown.target reboot.target halt.target
 After=NetworkManager.service
+After=mt7902-watchdog.service
 
 [Service]
 Type=oneshot
@@ -72,7 +73,49 @@ RemainAfterExit=yes
 WantedBy=halt.target reboot.target shutdown.target
 EOF
 
+    install_watchdog_files
     print_success "Сервисы созданы"
+}
+
+install_watchdog_files() {
+    local src="$SCRIPT_DIR/scripts/mt7902-watchdog.sh"
+    if [[ ! -f "$src" ]]; then
+        print_warning "watchdog script missing: $src"
+        return 0
+    fi
+    install -m 0755 "$src" /usr/local/sbin/mt7902-watchdog
+    cat > /etc/systemd/system/mt7902-watchdog.service << 'EOF'
+[Unit]
+Description=MT7902 Wi-Fi/Bluetooth watchdog (reload mt7902e / btusb_mt7902 if they drop)
+Documentation=file:///usr/local/sbin/mt7902-watchdog
+After=systemd-modules-load.service NetworkManager.service bluetooth.service
+Before=mt7902-driver-shutdown.service
+ConditionPathExists=/usr/local/sbin/mt7902-watchdog
+
+[Service]
+Type=simple
+ExecStart=/usr/local/sbin/mt7902-watchdog
+Restart=on-failure
+RestartSec=10
+Nice=10
+
+[Install]
+WantedBy=multi-user.target
+EOF
+}
+
+enable_watchdog() {
+    print_step "Включение watchdog Wi‑Fi/Bluetooth"
+    install_watchdog_files
+    systemctl daemon-reload
+    systemctl enable mt7902-watchdog.service
+    systemctl start mt7902-watchdog.service
+    print_success "mt7902-watchdog.service запущен"
+}
+
+disable_watchdog() {
+    systemctl stop mt7902-watchdog.service 2>/dev/null || true
+    systemctl disable mt7902-watchdog.service 2>/dev/null || true
 }
 
 enable_services() {
@@ -82,5 +125,6 @@ enable_services() {
         systemctl enable docker-shutdown.service || true
     fi
     systemctl enable mt7902-driver-shutdown.service
+    systemctl enable mt7902-watchdog.service 2>/dev/null || true
     print_success "Сервисы активированы"
 }

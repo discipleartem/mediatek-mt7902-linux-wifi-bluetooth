@@ -82,6 +82,7 @@ rollback_installation() {
         print_warning "Бэкап не найден ($BACKUP_DIR) — удаляю только файлы этого пакета"
     fi
 
+    disable_watchdog
     unload_our_modules
 
     local f
@@ -100,6 +101,7 @@ rollback_installation() {
         done
     fi
 
+    disable_watchdog
     systemctl disable docker-shutdown.service 2>/dev/null || true
     systemctl disable mt7902-driver-shutdown.service 2>/dev/null || true
     systemctl daemon-reload 2>/dev/null || true
@@ -186,6 +188,7 @@ remove_installation() {
         return
     fi
 
+    disable_watchdog
     unload_our_modules
 
     local f

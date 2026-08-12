@@ -17,4 +17,6 @@ assert_contains "docs/ru/installation.md explains script is not a daemon" "docs/
 assert_contains "README mentions modules-load autoload" "README.md" 'modules-load\.d'
 assert_contains "docs/supported-hardware.md documents kernel 7.0" "docs/supported-hardware.md" '7\.0'
 assert_contains "docs/ru/supported-hardware.md documents kernel 7.0" "docs/ru/supported-hardware.md" '7\.0'
+assert_contains "docs/installation.md mentions watchdog" "docs/installation.md" 'mt7902-watchdog'
+assert_contains "docs/ru/installation.md mentions watchdog" "docs/ru/installation.md" 'mt7902-watchdog'
 echo ""

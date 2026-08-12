@@ -33,7 +33,9 @@ for path in \
     '/etc/systemd/system/docker.service.d/override.conf' \
     '/etc/systemd/system/NetworkManager.service.d/override.conf' \
     '/etc/systemd/system/docker-shutdown.service' \
-    '/etc/systemd/system/mt7902-driver-shutdown.service'
+    '/etc/systemd/system/mt7902-driver-shutdown.service' \
+    '/etc/systemd/system/mt7902-watchdog.service' \
+    '/usr/local/sbin/mt7902-watchdog'
 do
     assert_installer_contains "managed path $path" "$path"
 done

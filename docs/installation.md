@@ -95,7 +95,7 @@ MT7902_AUTO_ROLLBACK=1 sudo ./mt7902.sh install-all
 
 ## What is autoloaded (and what is not) {#autoload}
 
-The `mt7902.sh` script is **not** added to boot autostart and does **not** run as a daemon. You run it manually for install / verify / rollback / remove.
+The `mt7902.sh` script is **not** added to boot autostart and does **not** run as a daemon. You run it manually for install / verify / rollback / remove / watchdog.
 
 After `install-all` the system may keep:
 
@@ -106,6 +106,7 @@ After `install-all` the system may keep:
 | Blacklist `btusb`/`btmtk` | `/etc/modprobe.d/blacklist_btusb.conf` | keep stock BT stack unloaded |
 | systemd timeouts | `/etc/systemd/system.conf.d/99-timeouts.conf` + Docker/NM overrides | faster shutdown |
 | `mt7902-driver-shutdown.service` | systemd, enabled | oneshot: unload `mt7902e` before shutdown |
+| `mt7902-watchdog.service` | systemd, enabled | reload `mt7902e` / `btusb_mt7902` if they drop (not a full reinstall) |
 | `docker-shutdown.service` | systemd (if Docker present) | oneshot: stop containers before shutdown |
 
 Check:
@@ -114,6 +115,7 @@ Check:
 cat /etc/modules-load.d/mt7902.conf
 cat /etc/modules-load.d/btusb_mt7902.conf
 systemctl is-enabled mt7902-driver-shutdown.service
+systemctl is-active mt7902-watchdog.service
 ```
 
 ### Systemd shutdown timeouts
@@ -144,6 +146,8 @@ sudo ./mt7902.sh system       # systemd only
 ./mt7902.sh verify
 ./mt7902.sh status            # alias of verify
 sudo ./mt7902.sh rollback     # restore settings from before install
+sudo ./mt7902.sh watchdog     # start background repair if Wi‑Fi/BT drop
+sudo ./mt7902.sh watchdog-stop
 ./mt7902.sh diagnose
 sudo ./mt7902.sh remove
 ./mt7902.sh help

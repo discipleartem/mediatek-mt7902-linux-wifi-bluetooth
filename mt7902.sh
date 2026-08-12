@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # MediaTek MT7902 WiFi + Bluetooth — универсальный скрипт
-# Версия: 6.0.1
+# Версия: 6.1.0
 
 set -euo pipefail
 
@@ -46,6 +46,18 @@ case "${1:-help}" in
         remove_installation
         ;;
     diagnose) run_diagnose ;;
+    watchdog)
+        print_header
+        check_root
+        enable_watchdog
+        ;;
+    watchdog-stop|watchdog-off)
+        print_header
+        check_root
+        disable_watchdog
+        systemctl daemon-reload 2>/dev/null || true
+        print_success "mt7902-watchdog остановлен"
+        ;;
     help|--help|-h) show_help ;;
     *)
         print_error "Неизвестная команда: $1"

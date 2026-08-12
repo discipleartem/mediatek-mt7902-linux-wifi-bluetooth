@@ -13,6 +13,11 @@ if [[ -x "$ROOT/tests/run-tests.sh" ]]; then
 else
     fail "tests/run-tests.sh is not executable"
 fi
+if [[ -x "$ROOT/scripts/mt7902-watchdog.sh" ]]; then
+    ok "scripts/mt7902-watchdog.sh is executable"
+else
+    fail "scripts/mt7902-watchdog.sh is not executable"
+fi
 
 local_fail=0
 while IFS= read -r f; do

@@ -38,7 +38,7 @@ sudo ./mt7902.sh install-all && sudo reboot
 ./mt7902.sh verify
 ```
 
-Installs `mt7902e` + `btusb_mt7902`, firmware, `modules-load.d` autoload, and shutdown helpers. Rollback: `sudo ./mt7902.sh rollback`.
+Installs `mt7902e` + `btusb_mt7902`, firmware, `modules-load.d` autoload, shutdown helpers, and `mt7902-watchdog` (reloads modules if Wi‑Fi/BT drop). Rollback: `sudo ./mt7902.sh rollback`.
 
 Details: [docs/installation.md](docs/installation.md) · FAQ: [docs/faq.md](docs/faq.md).
 
@@ -62,6 +62,7 @@ Upstream drivers: [hmtheboy154/mt7902](https://github.com/hmtheboy154/mt7902).
 
 ## Version
 
+**6.1.0** — `mt7902-watchdog`: reload Wi‑Fi/BT modules if they drop (`sudo ./mt7902.sh watchdog`).  
 **6.0.1** — verified on Ubuntu 24.04.4 / Linux **7.0.0-28-generic**; backport range **6.6–7.0**; `diagnose` shows MediaTek logs.  
 **6.0.0** — modular installer (`lib/*.sh`), removed stub/`patch` CLI, CI, archived PCI-ID patch.  
 **5.1.0** — discoverability (README EN/RU, `docs/`, GitHub topics, release).  

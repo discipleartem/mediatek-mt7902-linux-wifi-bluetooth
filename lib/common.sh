@@ -30,6 +30,8 @@ MANAGED_FILES=(
     /etc/systemd/system/NetworkManager.service.d/override.conf
     /etc/systemd/system/docker-shutdown.service
     /etc/systemd/system/mt7902-driver-shutdown.service
+    /etc/systemd/system/mt7902-watchdog.service
+    /usr/local/sbin/mt7902-watchdog
 )
 
 print_info() { echo -e "${BLUE}ℹ️  $1${NC}"; }

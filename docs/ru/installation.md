@@ -95,7 +95,7 @@ MT7902_AUTO_ROLLBACK=1 sudo ./mt7902.sh install-all
 
 ## Что автозагружается (и что нет) {#autoload}
 
-Скрипт `mt7902.sh` **не** добавляется в автозапуск и **не** работает как демон. Его запускают вручную для install / verify / rollback / remove.
+Скрипт `mt7902.sh` **не** добавляется в автозапуск и **не** работает как демон. Его запускают вручную для install / verify / rollback / remove / watchdog.
 
 После `install-all` в системе могут остаться:
 
@@ -106,6 +106,7 @@ MT7902_AUTO_ROLLBACK=1 sudo ./mt7902.sh install-all
 | Blacklist `btusb`/`btmtk` | `/etc/modprobe.d/blacklist_btusb.conf` | не грузить штатный BT stack |
 | systemd таймауты | `/etc/systemd/system.conf.d/99-timeouts.conf` + overrides Docker/NM | быстрее выключение |
 | `mt7902-driver-shutdown.service` | systemd, enabled | oneshot: unload `mt7902e` перед shutdown |
+| `mt7902-watchdog.service` | systemd, enabled | перезагрузка `mt7902e` / `btusb_mt7902` если они пропали (не полная переустановка) |
 | `docker-shutdown.service` | systemd (если есть Docker) | oneshot: остановить контейнеры перед shutdown |
 
 Проверка:
@@ -114,6 +115,7 @@ MT7902_AUTO_ROLLBACK=1 sudo ./mt7902.sh install-all
 cat /etc/modules-load.d/mt7902.conf
 cat /etc/modules-load.d/btusb_mt7902.conf
 systemctl is-enabled mt7902-driver-shutdown.service
+systemctl is-active mt7902-watchdog.service
 ```
 
 ### Systemd таймауты при выключении
@@ -144,6 +146,8 @@ sudo ./mt7902.sh system       # только systemd
 ./mt7902.sh verify
 ./mt7902.sh status            # alias verify
 sudo ./mt7902.sh rollback     # восстановить настройки до установки
+sudo ./mt7902.sh watchdog     # фоновый ремонт, если Wi‑Fi/BT пропали
+sudo ./mt7902.sh watchdog-stop
 ./mt7902.sh diagnose
 sudo ./mt7902.sh remove
 ./mt7902.sh help

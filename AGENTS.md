@@ -50,7 +50,7 @@ After hardware install, optional runtime check: `make test-hw` / `make check-sta
 
 **Rollback:** install always saves originals to `/var/lib/mt7902-fix/backup`. If Wi‑Fi/BT do not appear: `sudo ./mt7902.sh rollback` (or answer Yes when prompted after a failed module load). Auto: `MT7902_AUTO_ROLLBACK=1 sudo ./mt7902.sh install-all`.
 
-**Autoload / systemd:** `mt7902.sh` itself is **not** a boot daemon. Install writes `modules-load.d` for `mt7902e` / `btusb_mt7902`, optional blacklist, and enables oneshot shutdown units (`mt7902-driver-shutdown.service`). See [docs/installation.md](docs/installation.md#autoload).
+**Autoload / systemd:** `mt7902.sh` itself is **not** a boot daemon. Install writes `modules-load.d` for `mt7902e` / `btusb_mt7902`, optional blacklist, oneshot shutdown (`mt7902-driver-shutdown.service`), and optional `mt7902-watchdog.service` (reload modules if they drop — not a full reinstall). See [docs/installation.md](docs/installation.md#autoload). `sudo ./mt7902.sh watchdog` / `watchdog-stop`.
 Partial:
 
 - Wi‑Fi only: `sudo ./mt7902.sh install`

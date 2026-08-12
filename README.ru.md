@@ -38,7 +38,7 @@ sudo ./mt7902.sh install-all && sudo reboot
 ./mt7902.sh verify
 ```
 
-Ставит `mt7902e` + `btusb_mt7902`, прошивки, автозагрузку через `modules-load.d` и helpers для shutdown. Откат: `sudo ./mt7902.sh rollback`.
+Ставит `mt7902e` + `btusb_mt7902`, прошивки, автозагрузку через `modules-load.d`, helpers для shutdown и `mt7902-watchdog` (перезагрузка модулей, если Wi‑Fi/BT пропали). Откат: `sudo ./mt7902.sh rollback`.
 
 Подробнее: [docs/ru/installation.md](docs/ru/installation.md) · FAQ: [docs/ru/faq.md](docs/ru/faq.md).
 
@@ -62,6 +62,7 @@ Upstream-драйверы: [hmtheboy154/mt7902](https://github.com/hmtheboy154/m
 
 ## Версия
 
+**6.1.0** — `mt7902-watchdog`: перезагрузка модулей Wi‑Fi/BT, если они пропали (`sudo ./mt7902.sh watchdog`).  
 **6.0.1** — проверено на Ubuntu 24.04.4 / Linux **7.0.0-28-generic**; диапазон backport **6.6–7.0**; `diagnose` показывает логи MediaTek.  
 **6.0.0** — модульный installer (`lib/*.sh`), без stub/`patch` CLI, CI, архив PCI-ID патча.  
 **5.1.0** — discoverability (README EN/RU, `docs/`, GitHub topics, release).  
