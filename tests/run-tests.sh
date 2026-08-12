@@ -164,6 +164,8 @@ assert_contains "PCI ID 14c3:7902 in check_system" "mt7902.sh" '14c3:7902'
 assert_contains "case has install-all" "mt7902.sh" 'install-all\|all\)'
 assert_contains "case has bluetooth" "mt7902.sh" 'bluetooth\|bt\)'
 assert_contains "case has diagnose" "mt7902.sh" 'diagnose\)'
+assert_contains "diagnose filters MediaTek logs" "mt7902.sh" 'mt7902\|btusb_mt7902\|mediatek'
+assert_not_contains "diagnose does not dump unrelated -p err" "mt7902.sh" 'journalctl -b -p err'
 assert_contains "case has remove" "mt7902.sh" 'remove\)'
 assert_contains "case has rollback" "mt7902.sh" 'rollback\|restore\)'
 assert_not_contains "WIFI_MOD is not stock mt7921e" "mt7902.sh" '^WIFI_MOD="mt7921e"$'
@@ -240,6 +242,8 @@ assert_contains "AGENTS.md mentions tests" "AGENTS.md" 'tests/run-tests\.sh|make
 assert_contains "README mentions tests" "README.md" 'tests/run-tests\.sh|make test'
 assert_contains "GUIDE_RU mentions tests" "GUIDE_RU.md" 'tests/run-tests\.sh|make test'
 assert_contains "GUIDE_EN mentions tests" "GUIDE_EN.md" 'tests/run-tests\.sh|make test'
+assert_contains "GUIDE_RU documents kernel 7.0" "GUIDE_RU.md" '7\.0'
+assert_contains "GUIDE_EN documents kernel 7.0" "GUIDE_EN.md" '7\.0'
 # Agent discoverability: canonical URL + match keywords stay citable
 CANON_URL='mediatek-mt7902-linux-wifi-bluetooth'
 for doc in README.md AGENTS.md llms.txt llms-full.txt; do

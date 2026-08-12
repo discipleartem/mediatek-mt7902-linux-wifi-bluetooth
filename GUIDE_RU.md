@@ -47,9 +47,9 @@ cat /sys/class/dmi/id/sys_vendor /sys/class/dmi/id/product_name
 
 | Компонент | Источник | Ядра |
 |-----------|----------|------|
-| Wi‑Fi `mt7902e` | `gen4-mt7902/` ← ветка `backport` | 6.6–6.19 |
-| Bluetooth `btusb_mt7902` | `btusb_mt7902/` ← ветка `bluetooth_backport` | 6.6–6.19 |
-| Mainline | ожидается в Linux **7.1+** | — |
+| Wi‑Fi `mt7902e` | `gen4-mt7902/` ← ветка `backport` | 6.6–7.0 |
+| Bluetooth `btusb_mt7902` | `btusb_mt7902/` ← ветка `bluetooth_backport` | 6.6–7.0 |
+| Mainline | ожидается в Linux **7.1+** | до этого — out-of-tree |
 
 Репозиторий драйверов: [hmtheboy154/mt7902](https://github.com/hmtheboy154/mt7902).
 
@@ -105,8 +105,8 @@ bluetoothctl show
 | Ноутбук | Acer Aspire A315-59 |
 | Wi‑Fi | PCI `14c3:7902` / AzureWave `1a3b:5524` → `mt7902e`, интерфейс `wlp42s0` |
 | Bluetooth | USB `13d3:3594` → `btusb_mt7902`, HCI MediaTek 5.2, Powered |
-| Ядро | Linux 6.17 (Ubuntu 24.04 HWE) |
-| ОС | Ubuntu 24.04 |
+| Ядро | Linux **7.0** (Ubuntu 24.04 HWE `7.0.0-28-generic`); ранее 6.17 |
+| ОС | Ubuntu 24.04.4 LTS |
 ## Wi‑Fi
 
 ### Характеристики
@@ -290,23 +290,16 @@ make help
 
 ## Диагностика
 
+Достаточно одной команды (модули, PCI/USB, NM, BT, логи MediaTek):
+
 ```bash
 ./mt7902.sh diagnose
-make diagnose
-
-lsmod | grep -E 'mt7902e|btusb_mt7902'
-lspci -nnk | grep -A3 -i mediatek
-lsusb | grep -i 13d3
-ip -br link
-nmcli device status
-bluetoothctl show
-journalctl -b | grep -iE 'mt7902|btusb_mt7902|mediatek' | tail -40
 ```
 
 ## Требования
 
 - ОС: Ubuntu/Debian (рекомендуется), Fedora и др.
-- Ядро: **6.6+** для текущего backport
+- Ядро: **6.6–7.0** для текущего backport (на **7.1+** сначала проверьте in-tree)
 - Пакеты: `build-essential`, `linux-headers-$(uname -r)`, `git`, `dkms`
 - Secure Boot: выключен или модули подписаны (MOK)
 - Устройство: MT7902 (`14c3:7902`)

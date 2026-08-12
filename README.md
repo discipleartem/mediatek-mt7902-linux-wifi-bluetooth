@@ -64,7 +64,7 @@ lsusb | grep -iE '13d3|0e8d|Wireless|Bluetooth'
 
 Список неполный: подойдёт любой ноутбук, где `lspci` показывает `14c3:7902` (и для BT — USB‑часть combo‑чипа MediaTek).
 
-> **Ядро:** out-of-tree драйверы рассчитаны на **6.6–6.19**. Нативная поддержка MT7902 ожидается в Linux **7.1+**.
+> **Ядро:** out-of-tree драйверы проверены на **6.6–7.0** (в т.ч. Ubuntu 24.04 HWE `7.0.0-28`). Нативная поддержка MT7902 ожидается в Linux **7.1+**.
 
 ## Что решает
 
@@ -192,7 +192,7 @@ sudo make uninstall
 ## Требования
 
 - Ubuntu/Debian (рекомендуется), Fedora, RHEL-подобные
-- Ядро **6.6+** (для текущего backport); Secure Boot лучше выключить или подписать модули
+- Ядро **6.6–7.0** (для текущего backport); на 7.1+ сначала проверьте in-tree; Secure Boot лучше выключить или подписать модули
 - Пакеты: `build-essential`, `linux-headers-$(uname -r)`, `git`, `dkms`
 - Устройство: MediaTek **MT7902** (`14c3:7902`)
 
@@ -206,6 +206,7 @@ sudo make uninstall
 
 ## Версия
 
+**5.2** — стенд Ubuntu 24.04.4 / ядро **7.0**; `diagnose` показывает логи MediaTek; диапазон backport 6.6–7.0.
 **5.1** — rename `mediatek-mt7902-linux-wifi-bluetooth`, усилен AI discoverability (`llms.txt` directives, GitHub About/topics).
 **5.0** — Wi‑Fi (`mt7902e`) + Bluetooth (`btusb_mt7902`), железо, DKMS, AI-discoverability (`llms.txt`, `AGENTS.md`).
 

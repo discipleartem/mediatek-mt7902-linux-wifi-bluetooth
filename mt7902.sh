@@ -780,11 +780,28 @@ run_diagnose() {
     echo "🌐 Интерфейсы:"
     ip -br link || true
     echo ""
+    if command -v nmcli &>/dev/null; then
+        echo "📶 NetworkManager:"
+        nmcli -t -f DEVICE,TYPE,STATE,CONNECTION device status 2>/dev/null || true
+        echo ""
+    fi
     echo "📶 Bluetooth:"
     bluetoothctl show 2>/dev/null | head -20 || echo "  bluetoothctl недоступен"
     echo ""
-    echo "📝 Логи:"
-    journalctl -b -p err 2>/dev/null | tail -5 || true
+    echo "📝 Логи (mt7902 / mediatek, эта загрузка):"
+    journalctl -b --no-pager 2>/dev/null | grep -iE 'mt7902|btusb_mt7902|mediatek' | tail -40 || true
+    echo ""
+    echo "📌 Итог:"
+    if lsmod | grep -q "$WIFI_MOD" && ip -br link 2>/dev/null | grep -qiE 'wlan|wlp'; then
+        echo "  ✅ Wi‑Fi: $WIFI_MOD + интерфейс"
+    else
+        echo "  ❌ Wi‑Fi: нет модуля или интерфейса — sudo $0 rollback при необходимости"
+    fi
+    if lsmod | grep -q "$BT_MOD"; then
+        echo "  ✅ Bluetooth: $BT_MOD загружен"
+    else
+        echo "  ⚠️  Bluetooth: $BT_MOD не загружен"
+    fi
 }
 
 case "${1:-help}" in

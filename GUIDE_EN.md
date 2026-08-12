@@ -47,9 +47,9 @@ Any system with PCI ID **`14c3:7902`** is a candidate. The laptop list grows wit
 
 | Component | Source | Kernels |
 |-----------|--------|---------|
-| Wi‑Fi `mt7902e` | `gen4-mt7902/` ← `backport` branch | 6.6–6.19 |
-| Bluetooth `btusb_mt7902` | `btusb_mt7902/` ← `bluetooth_backport` | 6.6–6.19 |
-| Mainline | expected in Linux **7.1+** | — |
+| Wi‑Fi `mt7902e` | `gen4-mt7902/` ← `backport` branch | 6.6–7.0 |
+| Bluetooth `btusb_mt7902` | `btusb_mt7902/` ← `bluetooth_backport` | 6.6–7.0 |
+| Mainline | expected in Linux **7.1+** | until then — out-of-tree |
 
 Upstream driver repo: [hmtheboy154/mt7902](https://github.com/hmtheboy154/mt7902).
 
@@ -105,8 +105,8 @@ bluetoothctl show
 | Laptop | Acer Aspire A315-59 |
 | Wi‑Fi | PCI `14c3:7902` / AzureWave `1a3b:5524` → `mt7902e`, iface `wlp42s0` |
 | Bluetooth | USB `13d3:3594` → `btusb_mt7902`, MediaTek HCI 5.2, Powered |
-| Kernel | Linux 6.17 (Ubuntu 24.04 HWE) |
-| OS | Ubuntu 24.04 |
+| Kernel | Linux **7.0** (Ubuntu 24.04 HWE `7.0.0-28-generic`); previously 6.17 |
+| OS | Ubuntu 24.04.4 LTS |
 ## Wi‑Fi
 
 ### Specs
@@ -290,23 +290,16 @@ make help
 
 ## Diagnostics
 
+One command is enough (modules, PCI/USB, NM, BT, MediaTek logs):
+
 ```bash
 ./mt7902.sh diagnose
-make diagnose
-
-lsmod | grep -E 'mt7902e|btusb_mt7902'
-lspci -nnk | grep -A3 -i mediatek
-lsusb | grep -i 13d3
-ip -br link
-nmcli device status
-bluetoothctl show
-journalctl -b | grep -iE 'mt7902|btusb_mt7902|mediatek' | tail -40
 ```
 
 ## Requirements
 
 - OS: Ubuntu/Debian (recommended), Fedora, etc.
-- Kernel: **6.6+** for the current backport
+- Kernel: **6.6–7.0** for the current backport (on **7.1+**, check in-tree first)
 - Packages: `build-essential`, `linux-headers-$(uname -r)`, `git`, `dkms`
 - Secure Boot: disabled or modules signed (MOK)
 - Device: MT7902 (`14c3:7902`)

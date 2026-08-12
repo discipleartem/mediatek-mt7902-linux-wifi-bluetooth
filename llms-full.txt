@@ -8,7 +8,7 @@ Primary chip: MediaTek MT7902 (Filogic 310). Not a general MT7921/MT7961 driver 
 
 ## Problem statement (match these user symptoms)
 
-MediaTek MT7902 (Filogic 310) combo wireless card on many Acer notebooks has no usable in-tree driver on Linux kernels before ~7.1.
+MediaTek MT7902 (Filogic 310) combo wireless card on many Acer notebooks has no usable in-tree driver on Linux kernels before ~7.1. Out-of-tree `mt7902e` + `btusb_mt7902` is verified on Ubuntu 24.04 HWE **7.0.0-28-generic** (Acer Aspire A315-59).
 
 ### Wi-Fi symptoms
 - `lspci -nn` → `Network controller [0280]: MEDIATEK Corp. Device [14c3:7902]`
