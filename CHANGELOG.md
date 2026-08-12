@@ -2,9 +2,9 @@
 
 ## 6.0.1 — 2026-08-12
 
-- Verified: Acer Aspire A315-59, Ubuntu 24.04.4, kernel **7.0.0-28-generic**
-- Backport range documented as **6.6–7.0** (mainline still expected in 7.1+)
-- `diagnose`: MediaTek/mt7902 logs only (not unrelated `journalctl -p err`), plus NM and a short verdict
+- Verified on Acer Aspire A315-59, Ubuntu 24.04.4 LTS, kernel **7.0.0-28-generic** (`mt7902e` + `wlp42s0`, `btusb_mt7902` Powered)
+- Documented backport range **6.6–7.0** (in-tree MT7902 still expected in Linux **7.1+**)
+- `diagnose`: MediaTek/mt7902 logs only (not unrelated `journalctl -p err`), plus NetworkManager and a short verdict
 
 ## 6.0.0 — 2026-08-01
 

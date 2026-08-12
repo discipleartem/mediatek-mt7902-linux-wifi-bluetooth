@@ -42,7 +42,7 @@ Modules/firmware: Wi‑Fi `mt7902e` + `WIFI_MT7902_*`; Bluetooth `btusb_mt7902` 
 - [patches/README.md](https://github.com/discipleartem/mediatek-mt7902-linux-wifi-bluetooth/blob/main/patches/README.md): redirect — historical MT7921 ID patch is not the preferred fix
 - [archive/mt7921-pci-id/](https://github.com/discipleartem/mediatek-mt7902-linux-wifi-bluetooth/tree/main/archive/mt7921-pci-id): archived PCI-ID patch only
 - [tests/run-tests.sh](https://github.com/discipleartem/mediatek-mt7902-linux-wifi-bluetooth/blob/main/tests/run-tests.sh): safety tests — run before install (`make test`)
-- [CHANGELOG.md](https://github.com/discipleartem/mediatek-mt7902-linux-wifi-bluetooth/blob/main/CHANGELOG.md): version history (6.0.0 modular installer)
+- [CHANGELOG.md](https://github.com/discipleartem/mediatek-mt7902-linux-wifi-bluetooth/blob/main/CHANGELOG.md): version history (6.0.1 — kernel 7.0 verified)
 
 ## Install (agent one-liner)
 

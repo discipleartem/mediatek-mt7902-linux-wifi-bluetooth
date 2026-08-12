@@ -5,7 +5,7 @@ Pull requests welcome.
 
 ## Tested on
 
-Primary reference: **Ubuntu 24.04** (Acer Aspire A315-59, MediaTek MT7902 PCI `14c3:7902`).
+Primary reference: **Ubuntu 24.04.4** / kernel **7.0.0-28-generic** (Acer Aspire A315-59, MediaTek MT7902 PCI `14c3:7902`). Backports target kernels **6.6–7.0**.
 
 ## Before opening a PR
 

@@ -16,4 +16,6 @@ assert_installer_contains "case has diagnose" 'diagnose\)'
 assert_installer_contains "case has remove" 'remove\)'
 assert_installer_contains "case has rollback" 'rollback\|restore\)'
 assert_installer_not_contains "WIFI_MOD is not stock mt7921e" '^WIFI_MOD="mt7921e"$'
+assert_contains "mt7902.sh version 6.0.1" "mt7902.sh" 'Версия: 6\.0\.1'
+assert_contains "CHANGELOG has 6.0.1" "CHANGELOG.md" '^## 6\.0\.1'
 echo ""

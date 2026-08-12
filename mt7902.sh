@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # MediaTek MT7902 WiFi + Bluetooth — универсальный скрипт
-# Версия: 6.0.0
+# Версия: 6.0.1
 
 set -euo pipefail
 

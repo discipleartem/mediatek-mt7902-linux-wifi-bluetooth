@@ -1,5 +1,5 @@
 # Makefile for MediaTek MT7902 WiFi + Bluetooth
-# Version: 6.0.0
+# Version: 6.0.1
 #
 # Thin wrapper around ./mt7902.sh — prefer the script for installs.
 
