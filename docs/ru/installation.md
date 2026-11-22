@@ -124,7 +124,8 @@ systemctl is-active mt7902-watchdog.service
 
 **`/etc/systemd/system.conf.d/99-timeouts.conf`**
 
-```
+```ini
+[Manager]
 DefaultTimeoutStartSec=30s
 DefaultTimeoutStopSec=30s
 DefaultTimeoutAbortSec=10s
