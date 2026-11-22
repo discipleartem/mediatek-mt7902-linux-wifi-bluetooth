@@ -21,6 +21,8 @@ assert_installer_contains "blacklist_btusb.conf managed" 'blacklist_btusb\.conf'
 assert_installer_not_contains "no recursive rm of /" 'rm -rf[[:space:]]+/($|[[:space:]])'
 assert_installer_not_contains "no rm -rf /etc" 'rm -rf[[:space:]]+/etc'
 assert_installer_contains "DefaultTimeoutStopSec=30s" 'DefaultTimeoutStopSec=30s'
+assert_installer_contains "99-timeouts.conf has [Manager] section (else systemd ignores it)" \
+    '^\[Manager\]$'
 assert_installer_not_contains "does not set TimeoutStop infinity" 'TimeoutStopSec=infinity'
 
 # Managed paths contract (rollback must know these)

@@ -7,6 +7,7 @@ apply_system_settings() {
     mkdir -p /etc/systemd/system.conf.d
     cat > /etc/systemd/system.conf.d/99-timeouts.conf << 'EOF'
 # MediaTek MT7902 — оптимизация таймаутов
+[Manager]
 DefaultTimeoutStartSec=30s
 DefaultTimeoutStopSec=30s
 DefaultTimeoutAbortSec=10s
